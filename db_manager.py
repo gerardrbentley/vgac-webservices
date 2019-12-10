@@ -1,6 +1,7 @@
 import json
 import os
 import glob
+import io
 import csv
 from datetime import datetime
 import uuid
@@ -10,6 +11,10 @@ from psycopg2 import sql
 import psycopg2
 
 import numpy as np
+from PIL import Image
+
+AFFORDANCES = ["solid", "movable", "destroyable",
+               "dangerous", "gettable", "portal", "usable", "changeable", "ui", "permeable"]
 
 def load_label_from_tagger(label_file):
     if os.path.isfile(label_file):
@@ -74,7 +79,7 @@ class DB_Manager(object):
     def __init__(self, **kwargs):
         connargs = {'dbname': 'postgres',
             'user': 'postgres',
-            'host': '192.168.99.100',
+            'host': '192.168.99.101',
             'port': '5432'}
         self.connection = psycopg2.connect(**connargs)
         # self.cursor = connection.cursor()
@@ -140,34 +145,63 @@ class DB_Manager(object):
                 for label_file in label_files:
                     tagger_npy = os.path.split(label_file)[1]
                     tagger = os.path.splitext(tagger_npy)[0]
-                    has_tagged = check_tagger_tagged_screenshot(
+                    has_tagged = self.check_tagger_tagged_screenshot(
                         screenshot_uuid, tagger)
                     if has_tagged:
                         print(
                             f'SKIPPED INGESTING Tags:{tagger} on {screenshot_uuid}')
                         tag_skip_ctr += 1
                     else:
-                        label = P.load_label_from_tagger(label_file)
+                        label = load_label_from_tagger(label_file)
                         if label is not None:
-                            ingest_screenshot_tags(
+                            self.ingest_screenshot_tags(
                                 label, screenshot_uuid, tagger=tagger)
                             tag_ctr += 1
             ctr += 1
         return ctr, tag_ctr, skip_ctr
 
-    def ingest_screenshot_tags(stacked_array, image_id, tagger='ingested'):
+    def ingest_screenshot_tags(self, stacked_array, image_id, tagger='ingested'):
         # channels_dict = P.numpy_to_images(stacked_array)
         _, _, channels = stacked_array.shape
         channels_dict = {}
         for i in range(channels):
+
             one_channel = stacked_array[:, :, i].copy() * 255
-            _, image_buffer = cv2.imencode('.png', one_channel)
-            channels_dict[AFFORDANCES[i]] = image_buffer
+            image_buffer = Image.fromarray(one_channel, mode='L')
+            # image_buffer.save('tmp/'+image_id+AFFORDANCES[i]+".png", format="PNG")
+            image_bytes = io.BytesIO()
+            image_buffer.save(image_bytes, format='PNG')
+            image_bytes = image_bytes.getvalue()
+            # _, image_buffer = cv2.imencode('.png', one_channel)
+            # print('one channel shape', one_channel.shape, 'buff shape', type(image_bytes))
+
+            channels_dict[AFFORDANCES[i]] = image_bytes
         print('INGESTING SCREENSHOT: {}'.format(image_id))
-        for i, affordance in enumerate(P.AFFORDANCES):
-            encoded_channel = channels_dict[affordance]
-            channel_data = encoded_channel.tobytes()
-            insert_screenshot_tag(image_id, i, tagger, channel_data)
+        if (channels) == 9:
+            print('9 channel map, adding blank permeable')
+
+            new_channel = np.zeros_like(one_channel)
+            image_buffer = Image.fromarray(new_channel, mode='L')
+            image_bytes = io.BytesIO()
+            image_buffer.save(image_bytes, format='PNG')
+            image_bytes = image_bytes.getvalue()
+            # _, image_buffer = cv2.imencode('.png', new_channel)
+
+            channels_dict["permeable"] = image_bytes
+            # print('one channel shape', one_channel.shape, 'buff shape', type(image_bytes))
+
+        for i, affordance in enumerate(AFFORDANCES):
+            channel_data = channels_dict[affordance]
+            # channel_data = encoded_channel.tobytes()
+
+            to_insert = {
+                'image_id': image_id,
+                'affordance': affordance,
+                'tagger': tagger,
+                'data': channel_data,
+                'dt': datetime.now(),
+            }
+            self.insert_screenshot_tag(to_insert)
 
     def ingest_tiles(self, game, tiles_dir):
         ctr = 0
@@ -203,7 +237,7 @@ class DB_Manager(object):
                 ctr += 1
         return ctr, tag_ctr, skip_ctr
 
-    def init_db(self):
+    def init_tables(self):
         print('Making Tables')
         screenshot_table = sql.SQL(
             """CREATE TABLE IF NOT EXISTS screenshots(
@@ -228,10 +262,10 @@ class DB_Manager(object):
         screenshot_tags_table = sql.SQL(
             """CREATE TABLE IF NOT EXISTS screenshot_tags(
             image_id UUID NOT NULL,
-            affordance integer NOT NULL,
+            affordance VARCHAR(12) NOT NULL,
             tagger_id VARCHAR(50) NOT NULL,
             created_on TIMESTAMP NOT NULL,
-            tags bytea,
+            data bytea,
             PRIMARY KEY (image_id, affordance, tagger_id),
             CONSTRAINT screenshot_tags_image_id_fkey FOREIGN KEY (image_id)
               REFERENCES screenshots (image_id) MATCH SIMPLE
@@ -263,6 +297,7 @@ class DB_Manager(object):
             usable boolean NOT NULL,
             changeable boolean NOT NULL,
             ui boolean NOT NULL,
+            permeable boolean NOT NULL,
             PRIMARY KEY (tile_id, tagger_id),
             CONSTRAINT tile_tags_tile_id_fkey FOREIGN KEY (tile_id)
               REFERENCES tiles (tile_id) MATCH SIMPLE
@@ -293,6 +328,7 @@ class DB_Manager(object):
             usable boolean NOT NULL,
             changeable boolean NOT NULL,
             ui boolean NOT NULL,
+            permeable boolean NOT NULL,
             PRIMARY KEY (sprite_id, tagger_id),
             CONSTRAINT sprite_tags_sprite_id_fkey FOREIGN KEY (sprite_id)
               REFERENCES sprites (sprite_id) MATCH SIMPLE
@@ -333,11 +369,11 @@ class DB_Manager(object):
             return res[0]
         return False
 
-    def check_tagger_tagged_screenshot(id, tagger_id):
-        cmd = text(
-            """SELECT EXISTS(SELECT 1 FROM screenshot_tags where image_id = %(id)s and tagger_id = %(tagger_id)s) as "exists"
+    def check_tagger_tagged_screenshot(self, id, tagger_id):
+        cmd = sql.SQL(
+            """SELECT EXISTS(SELECT 1 FROM {} where image_id = %(id)s and tagger_id = %(tagger_id)s) as "exists"
             """
-        )
+        ).format(sql.Identifier('screenshot_tags'))
         with self.connection:
             with self.connection.cursor() as cursor:
                 cursor.execute(cmd, {'id': id, 'tagger_id': tagger_id})
@@ -360,13 +396,32 @@ class DB_Manager(object):
                 res = cursor.fetchone()
         return res[0]
 
+    def insert_screenshot_tag(self, kwargs):
+        cmd = sql.SQL(
+            """INSERT INTO screenshot_tags(image_id, affordance, tagger_id, created_on, data)
+            VALUES(%(image_id)s, %(affordance)s, %(tagger)s, %(dt)s, %(data)s)
+            ON CONFLICT ON CONSTRAINT screenshot_tags_pkey
+            DO UPDATE SET data = %(data)s
+            RETURNING image_id
+            """
+        )
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                cursor.execute(cmd, kwargs)
+                res = cursor.fetchone()
+        return res[0]
+
     def close(self):
         self.connection.close()
 
 if __name__ == '__main__':
     print('ingesting')
     manage = DB_Manager()
+    print('manage made')
     manage.drop_all()
-    manage.init_db()
+    print('dropped all')
+    manage.init_tables()
+    print('made all tables')
     manage.ingest_screenshots('sm3', '../tagger/eventgames/sm3/screenshots/')
+    print('ingested, closing')
     manage.close()

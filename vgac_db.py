@@ -14,7 +14,7 @@ class VGAC_Database(object):
         print("New DB connection created (backend PID {})".format(pid))
 
     dbpool = adbapi.ConnectionPool('psycopg2',
-                                    host = '192.168.99.100',
+                                    host = '192.168.99.101',
                                     port = 5432,
                                     database = 'postgres',
                                     user = 'postgres',
@@ -28,18 +28,6 @@ class VGAC_Database(object):
                                     cursor_factory = DictCursor)
     table = 'screenshots'
     # dbpool.start()
-
-    def _createDB(self, cursor):
-        create_stmt = 'CREATE TABLE %s (' \
-            '_id_ INTEGER PRIMARY KEY,' \
-            'first_name TEXT,' \
-            'last_name TEXT,' \
-            'age INTEGER' \
-            ')' % (self.table)
-        cursor.execute(create_stmt)
-
-    def createDB(self):
-        return self.dbpool.runInteraction(self._createDB)
 
     def _insert(self, cursor, first, last, age):
         insert_stmt = 'INSERT INTO %s (first_name, last_name, age) VALUES ("%s", "%s", %d)' % (self.table, first, last, age)
@@ -84,7 +72,7 @@ class VGAC_Database(object):
 
     def get_screenshot_affordances(self, image_id='default'):
         cmd = sql.SQL(
-            """SELECT image_id, affordance, tags, tagger_id FROM screenshot_tags
+            """SELECT image_id, affordance, data, tagger_id FROM screenshot_tags
             WHERE image_id = %(image_id)s ORDER BY tagger_id, affordance;
             """
         )
@@ -171,7 +159,7 @@ class VGAC_App(object):
         d.addCallback(self.screenshotJSON, request)
         d.addErrback(self.onFail, request, 'Failed to query db')
         return d
-        
+
     @app.route('/untagged_screenshot/<string:tagger_id>', methods=['GET'])
     def queryUn(self, request, tagger_id):
         d = self.db.get_untagged_screenshot(tagger_id=tagger_id)
@@ -231,6 +219,23 @@ class VGAC_App(object):
             strf = enc.decode('utf-8')
             mapper['data'] = strf
             responseJSON.append(mapper)
+        return json.dumps(responseJSON)
+
+    def affordancesJSON(self, results, request):
+        request.setHeader('Content-Type', 'application/json')
+        responseJSON = []
+        for record in results:
+            mapper = {
+                    'image_id': record['image_id'],
+                    'affordance': record['affordance'],
+                    'tagger_id': record['tagger_id'],
+                }
+            data = record['data']
+            enc = base64.b64encode(data)
+            strf = enc.decode('utf-8')
+            mapper['data'] = strf
+            if record['affordance'] == 'destroyable':
+                responseJSON.append(mapper)
         return json.dumps(responseJSON)
 
 if __name__ == '__main__':
