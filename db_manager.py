@@ -79,7 +79,7 @@ class DB_Manager(object):
     def __init__(self, **kwargs):
         connargs = {'dbname': 'postgres',
             'user': 'postgres',
-            'host': '192.168.99.101',
+            'host': '192.168.99.102',
             'port': '5432'}
         self.connection = psycopg2.connect(**connargs)
         # self.cursor = connection.cursor()
@@ -87,12 +87,9 @@ class DB_Manager(object):
     def ingest_filesystem_data(self, dir):
         total_ingested = {}
         for game in list_games(dir):
-            # num_images, num_tags = ingest_screenshot_files_with_offsets(
-            #         screenshot_files, game, dir)
             num_images, num_tags, num_skipped = self.ingest_screenshots(
                 game, os.path.join(dir, game, 'screenshots'))
 
-            # num_tiles = ingest_tiles_from_pickle(game, dir)
             num_tiles, num_tile_tags, num_tile_skipped = ingest_tiles(game, os.path.join(dir, game, 'tiles'))
             # ingest_sprite_files(sprite_files, game), dir
             total_ingested[game] = {
@@ -110,7 +107,7 @@ class DB_Manager(object):
             screenshot_file = os.path.join(
                 screenshots_dir, screenshot_uuid, f'{screenshot_uuid}.png')
             # screenshot_uuid = os.path.splitext(file_name)[0]
-            is_in = self.check_uuid_in_table('screenshots', screenshot_uuid)
+            is_in = self.check_uuid_in_table('screenshots', 'image_id', screenshot_uuid)
             if is_in:
                 print(f'SKIPPED INGESTING IMAGE: {screenshot_uuid}')
                 skip_ctr += 1
@@ -166,12 +163,13 @@ class DB_Manager(object):
         channels_dict = {}
         for i in range(channels):
 
-            one_channel = stacked_array[:, :, i].copy() * 255
-            image_buffer = Image.fromarray(one_channel, mode='L')
-            # image_buffer.save('tmp/'+image_id+AFFORDANCES[i]+".png", format="PNG")
+            one_channel = stacked_array[:, :, i].astype(np.uint8) * 255
+            image_buffer = Image.fromarray(one_channel)
+
             image_bytes = io.BytesIO()
             image_buffer.save(image_bytes, format='PNG')
             image_bytes = image_bytes.getvalue()
+            # image_bytes = image_buffer.tobytes()
             # _, image_buffer = cv2.imencode('.png', one_channel)
             # print('one channel shape', one_channel.shape, 'buff shape', type(image_bytes))
 
@@ -181,15 +179,13 @@ class DB_Manager(object):
             print('9 channel map, adding blank permeable')
 
             new_channel = np.zeros_like(one_channel)
-            image_buffer = Image.fromarray(new_channel, mode='L')
+            image_buffer = Image.fromarray(new_channel)
             image_bytes = io.BytesIO()
             image_buffer.save(image_bytes, format='PNG')
             image_bytes = image_bytes.getvalue()
             # _, image_buffer = cv2.imencode('.png', new_channel)
 
             channels_dict["permeable"] = image_bytes
-            # print('one channel shape', one_channel.shape, 'buff shape', type(image_bytes))
-
         for i, affordance in enumerate(AFFORDANCES):
             channel_data = channels_dict[affordance]
             # channel_data = encoded_channel.tobytes()
@@ -209,30 +205,47 @@ class DB_Manager(object):
         skip_ctr = 0
         for tile_file in glob.glob(os.path.join(tiles_dir, '*.png')):
             file_name = os.path.split(tile_file)[1]
-            tile_uuid = os.path.splitext(file_name)[0]
-            is_in = check_uuid_in_table('tiles', tile_uuid)
+            tile_id = os.path.splitext(file_name)[0]
+            is_in = self.check_uuid_in_table('tiles', 'tile_id', tile_id)
             if is_in:
-                print(f'SKIPPED INGESTING TILE: {tile_uuid}')
+                print(f'SKIPPED INGESTING TILE: {tile_id}')
                 skip_ctr += 1
             else:
-                # cv, encoded_png = P.load_image(tile_file)
-                # h, w, c = cv.shape
-                # data = encoded_png.tobytes()
-                with open(screenshot_file, 'rb') as f:
+                with open(tile_file, 'rb') as f:
                     data = f.read()
-                result = insert_tile(tile_uuid, game, 8, 8, data)
+                to_insert = {
+                    'tile_id': tile_id,
+                    'game': game,
+                    'width': 8,
+                    'height': 8,
+                    'data': data,
+                    'dt': datetime.now()
+                }
+                result = self.insert_tile(to_insert)
                 # tile_id = result['tile_id']
 
                 # TODO TILE AFFORDANCES
-                csv_file = os.path.join(dir, game, 'tiles', 'tile_affordances.csv')
-                tile_entries = affords_from_csv_file(csv_file, tile_uuid)
+                csv_file = os.path.join(tiles_dir, 'tile_affordances.csv')
+                tile_entries = affords_from_csv_file(csv_file, tile_id)
                 if len(tile_entries) > 0:
                     print('TILE HAD AFFORDS')
                     for tile_entry in tile_entries:
-                        insert_tile_tag(
-                            tile_uuid, tile_entry['tagger_id'], int(
-                                tile_entry['solid']),
-                            int(tile_entry['movable']), int(tile_entry['destroyable']), int(tile_entry['dangerous']), int(tile_entry['gettable']), int(tile_entry['portal']), int(tile_entry['usable']), int(tile_entry['changeable']), int(tile_entry['ui']))
+                        to_insert = {
+                            'tile_id': tile_id,
+                            'tagger_id': tile_entry['tagger_id'],
+                            'solid': bool(int(tile_entry['solid'])),
+                            'movable': bool(int(tile_entry['movable'])),
+                            'destroyable': bool(int(tile_entry['destroyable'])),
+                            'dangerous': bool(int(tile_entry['dangerous'])),
+                            'gettable': bool(int(tile_entry['gettable'])),
+                            'portal': bool(int(tile_entry['portal'])),
+                            'usable': bool(int(tile_entry['usable'])),
+                            'changeable': bool(int(tile_entry['changeable'])),
+                            'ui': bool(int(tile_entry['ui'])),
+                            'permeable': bool(int(tile_entry['permeable'])),
+                            'dt': datetime.now()
+                        }
+                        self.insert_tile_tag(to_insert)
                         tag_ctr += 1
                 ctr += 1
         return ctr, tag_ctr, skip_ctr
@@ -356,11 +369,11 @@ class DB_Manager(object):
                     print(cmd.as_string(self.connection))
                     cursor.execute(cmd)
 
-    def check_uuid_in_table(self, table='default', id='default'):
+    def check_uuid_in_table(self, table='default', col='default', id='default'):
         cmd = sql.SQL(
-            """SELECT EXISTS(SELECT 1 FROM {} where image_id = %(id)s) as "exists"
+            """SELECT EXISTS(SELECT 1 FROM {} where {} = %(id)s) as "exists"
             """
-        ).format(sql.Identifier(table))
+        ).format(sql.Identifier(table), sql.Identifier(col))
         with self.connection:
             with self.connection.cursor() as cursor:
                 cursor.execute(cmd, {'id': id})
@@ -382,7 +395,7 @@ class DB_Manager(object):
             return res[0]
         return False
 
-        ####SQL
+    ####INSERTION SQL
     def insert_screenshot(self, kwargs):
         cmd = sql.SQL(
             """INSERT INTO screenshots(image_id, game, width, height, y_offset, x_offset, created_on, data, crop_l, crop_r, crop_t, crop_b, ui_x, ui_y, ui_height, ui_width)
@@ -411,6 +424,36 @@ class DB_Manager(object):
                 res = cursor.fetchone()
         return res[0]
 
+    def insert_tile(self, kwargs):
+        cmd = sql.SQL(
+            """INSERT INTO tiles(tile_id, game, width, height, created_on, data)
+            VALUES(%(tile_id)s, %(game)s, %(width)s, %(height)s, %(dt)s, %(data)s)
+            RETURNING tile_id
+            """
+        )
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                cursor.execute(cmd, kwargs)
+                res = cursor.fetchone()
+        return res[0]
+
+    def insert_tile_tag(self, kwargs):
+        cmd = sql.SQL(
+            """INSERT INTO tile_tags(tile_id, created_on, tagger_id, solid, movable, destroyable, dangerous, gettable, portal, usable, changeable, ui, permeable)
+            VALUES(%(tile_id)s, %(dt)s, %(tagger_id)s, %(solid)s, %(movable)s, %(destroyable)s, %(dangerous)s, %(gettable)s, %(portal)s, %(usable)s, %(changeable)s, %(ui)s, %(permeable)s)
+            ON CONFLICT ON CONSTRAINT tile_tags_pkey
+            DO UPDATE SET solid = %(solid)s, movable = %(movable)s, destroyable = %(destroyable)s, dangerous = %(dangerous)s, gettable = %(gettable)s, portal = %(portal)s, usable = %(usable)s, changeable = %(changeable)s, ui = %(ui)s, permeable = %(permeable)s
+            RETURNING tile_id
+            """
+        )
+
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                print(cmd.as_string(self.connection))
+                cursor.execute(cmd, kwargs)
+                res = cursor.fetchone()
+        return res[0]
+
     def close(self):
         self.connection.close()
 
@@ -423,5 +466,6 @@ if __name__ == '__main__':
     manage.init_tables()
     print('made all tables')
     manage.ingest_screenshots('sm3', '../tagger/eventgames/sm3/screenshots/')
-    print('ingested, closing')
+    manage.ingest_tiles('sm3', '../tagger/eventgames/sm3/tiles/')
+    print('ingested screenshtos and tiles, closing')
     manage.close()

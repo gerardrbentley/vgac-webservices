@@ -14,7 +14,7 @@ class VGAC_Database(object):
         print("New DB connection created (backend PID {})".format(pid))
 
     dbpool = adbapi.ConnectionPool('psycopg2',
-                                    host = '192.168.99.101',
+                                    host = '192.168.99.102',
                                     port = 5432,
                                     database = 'postgres',
                                     user = 'postgres',
@@ -167,7 +167,7 @@ class VGAC_App(object):
         d.addErrback(self.onFail, request, 'Failed to query db')
         return d
 
-    @app.route('/screenshot/<string:image_id>', methods=['GET'])
+    @app.route('/screenshots/<string:image_id>', methods=['GET'])
     def screenshotById(self, request, image_id):
         d = self.db.get_screenshot_by_id(image_id=image_id)
         d.addCallback(self.screenshotJSON, request)
@@ -177,9 +177,17 @@ class VGAC_App(object):
     @app.route('/screenshot_tags/<string:image_id>', methods=['GET'])
     def tagsById(self, request, image_id):
         d = self.db.get_screenshot_affordances(image_id=image_id)
-        d.addCallback(self.affordancesJSON, request)
+        d.addCallback(self.screenshot_tagJSON, request)
         d.addErrback(self.onFail, request, 'Failed to query db')
         return d
+
+    @app.route('/tiles/<string:tile_id>', methods=['GET'])
+    def tagsById(self, request, tile_id):
+        d = self.db.get_tile_by_id(tile_id=tile_id)
+        d.addCallback(self.tileJSON, request)
+        d.addErrback(self.onFail, request, 'Failed to query db')
+        return d
+
 
 
     #---------- Callbacks -----------#
@@ -221,7 +229,7 @@ class VGAC_App(object):
             responseJSON.append(mapper)
         return json.dumps(responseJSON)
 
-    def affordancesJSON(self, results, request):
+    def screenshot_tagJSON(self, results, request):
         request.setHeader('Content-Type', 'application/json')
         responseJSON = []
         for record in results:
@@ -234,8 +242,26 @@ class VGAC_App(object):
             enc = base64.b64encode(data)
             strf = enc.decode('utf-8')
             mapper['data'] = strf
-            if record['affordance'] == 'destroyable':
-                responseJSON.append(mapper)
+            # if record['affordance'] == 'solid':
+            responseJSON.append(mapper)
+        return json.dumps(responseJSON)
+
+    def tileJSON(self, results, request):
+        request.setHeader('Content-Type', 'application/json')
+        responseJSON = []
+        for record in results:
+            mapper = {
+                    'tile_id': record['tile_id'],
+                    'game': record['game'],
+                    'width': record['width'],
+                    'height': record['height'],
+                }
+            data = record['data']
+            enc = base64.b64encode(data)
+            strf = enc.decode('utf-8')
+            mapper['data'] = strf
+            # if record['affordance'] == 'solid':
+            responseJSON.append(mapper)
         return json.dumps(responseJSON)
 
 if __name__ == '__main__':
