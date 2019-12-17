@@ -12,8 +12,12 @@ class ExpertTagger(object):
 
     app = Klein()
 
+    @app.route("/test")
+    def test(self, request):
+        return json.dumps({'message': 'expert test'})
+
     #--------- Routes ---------#
-    @app.route("/expert", methods=['GET'])
+    @app.route("/get_image", methods=['GET'])
     @inlineCallbacks
     def get_image_to_tag(self, request):
         """Return random image, list of unique tiles and locations"""
@@ -186,4 +190,4 @@ class ExpertTagger(object):
 
 if __name__ == '__main__':
     webapp = ExpertTagger()
-    webapp.app.run('localhost', 5001)
+    webapp.app.run('0.0.0.0', 5000)

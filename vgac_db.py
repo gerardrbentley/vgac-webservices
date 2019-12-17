@@ -8,7 +8,9 @@ from twisted.enterprise import adbapi
 from psycopg2.extras import DictCursor
 from psycopg2 import sql
 
-from klein_helpers import dict_decode
+def dict_decode(bytes_keys_values):
+    return {k.decode('utf-8'):list(map(lambda x: x.decode('utf-8'), v)) for (k,v) in bytes_keys_values.items()}
+
 
 class VGAC_Database(object):
 
@@ -188,6 +190,10 @@ class VGAC_DBAPI(object):
     @app.route('/devstatic/', branch=True)
     def static(self, request):
         return File("./static")
+
+    @app.route('/')
+    def test(self, request):
+        return json.dumps({'message': 'Hello World'})
 
     #--------- Routes ---------#
     @app.route('/insert', methods=['POST'])
@@ -396,4 +402,5 @@ class VGAC_DBAPI(object):
 
 if __name__ == '__main__':
     webapp = VGAC_DBAPI()
-    webapp.app.run('localhost', 5000)
+    print('Let Us Begin')
+    webapp.app.run("0.0.0.0", 5000)
