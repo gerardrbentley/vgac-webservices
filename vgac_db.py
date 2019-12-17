@@ -1,11 +1,14 @@
 import json
 import base64
+import datetime
 
 from klein import Klein
+from twisted.web.static import File
 from twisted.enterprise import adbapi
-from twisted.internet import reactor
 from psycopg2.extras import DictCursor
 from psycopg2 import sql
+
+from klein_helpers import dict_decode
 
 class VGAC_Database(object):
 
@@ -28,6 +31,12 @@ class VGAC_Database(object):
                                     cursor_factory = DictCursor)
     table = 'screenshots'
     # dbpool.start()
+    def logInsert(op):
+        print('logInsert')
+        if op:
+            print(op)
+        else:
+            print("no operation done")
 
     def _insert(self, cursor, first, last, age):
         insert_stmt = 'INSERT INTO %s (first_name, last_name, age) VALUES ("%s", "%s", %d)' % (self.table, first, last, age)
@@ -35,6 +44,41 @@ class VGAC_Database(object):
 
     def insert(self, first, last, age):
         return self.dbpool.runInteraction(self._insert, first, last, age)
+
+    def insert_screenshot_tag(self, kwargs):
+        cmd = sql.SQL(
+            """INSERT INTO screenshot_tags(image_id, affordance, tagger_id, created_on, data)
+            VALUES(%(image_id)s, %(affordance)s, %(tagger)s, %(dt)s, %(data)s)
+            ON CONFLICT ON CONSTRAINT screenshot_tags_pkey
+            DO UPDATE SET data = %(data)s
+            RETURNING image_id
+            """
+        )
+        self.dbpool.runOperation(cmd, kwargs).addCallback(logInsert)
+        print('Insert Screenshot tag Called and Ended')
+
+    def insert_tile(self, kwargs):
+        cmd = sql.SQL(
+            """INSERT INTO tiles(tile_id, game, width, height, created_on, data)
+            VALUES(%(tile_id)s, %(game)s, %(width)s, %(height)s, %(dt)s, %(data)s)
+            RETURNING tile_id
+            """
+        )
+        self.dbpool.runOperation(cmd, kwargs).addCallback(logInsert)
+        print('Insert Tile Called and Ended')
+
+    def insert_tile_tag(self, kwargs):
+        cmd = sql.SQL(
+            """INSERT INTO tile_tags(tile_id, created_on, tagger_id, solid, movable, destroyable, dangerous, gettable, portal, usable, changeable, ui, permeable)
+            VALUES(%(tile_id)s, %(dt)s, %(tagger_id)s, %(solid)s, %(movable)s, %(destroyable)s, %(dangerous)s, %(gettable)s, %(portal)s, %(usable)s, %(changeable)s, %(ui)s, %(permeable)s)
+            ON CONFLICT ON CONSTRAINT tile_tags_pkey
+            DO UPDATE SET solid = %(solid)s, movable = %(movable)s, destroyable = %(destroyable)s, dangerous = %(dangerous)s, gettable = %(gettable)s, portal = %(portal)s, usable = %(usable)s, changeable = %(changeable)s, ui = %(ui)s, permeable = %(permeable)s
+            RETURNING tile_id
+            """
+        )
+
+        self.dbpool.runOperation(cmd, kwargs).addCallback(logInsert)
+        print('Insert Tile Tag Called and Ended')
 
     def queryAll(self):
         select_stmt = sql.SQL("SELECT * FROM {}").format(sql.Identifier(self.table))
@@ -62,13 +106,13 @@ class VGAC_Database(object):
         )
         return self.dbpool.runQuery(cmd, {"tagger":tagger_id})
 
-    def get_screenshot_by_id(self, image_id='default'):
+    def get_resource_by_id(self, table='default', col='default', resource_id='default'):
         cmd = sql.SQL(
-            """SELECT * FROM screenshots
-            WHERE image_id = %(image_id)s;
+            """SELECT * FROM {}
+            WHERE {} = %(resource_id)s;
             """
-        )
-        return self.dbpool.runQuery(cmd, {"image_id":image_id})
+        ).format(sql.Identifier(table), sql.Identifier(col))
+        return self.dbpool.runQuery(cmd, {"resource_id":resource_id})
 
     def get_screenshot_affordances(self, image_id='default'):
         cmd = sql.SQL(
@@ -136,18 +180,85 @@ class VGAC_Database(object):
         return self.dbpool.runQuery(cmd, {"image_id":image_id, "tagger_id":tagger_id})
 
 
-class VGAC_App(object):
+class VGAC_DBAPI(object):
 
     app = Klein()
     db = VGAC_Database()
 
-    #--------- Routes ---------#
-    # @app.route('/insert', methods=['POST'])
-    def insert(self, request):
-        first_name = request.args.get('fname', [None])[0]
-        last_name = request.args.get('lname', [None])[0]
-        age = int(request.args.get('age', [0])[0])
+    @app.route('/devstatic/', branch=True)
+    def static(self, request):
+        return File("./static")
 
+    #--------- Routes ---------#
+    @app.route('/insert', methods=['POST'])
+    def insert(self, request):
+        print(type(request.args))
+        data = json.loads(request.content.read())
+        tagger_id = data.get('tagger_id', [None])
+        image_id = data.get('image_id', [None])
+        print(f'RECEIVED TAGS FROM: {tagger_id} FOR IMAGE: {image_id}')
+        print(f'data: {data}')
+        tiles = (data.get('tiles', [None]))
+        print(tiles)
+
+        insert_count = 0
+        skip_count = 0
+        for tile in tiles:
+            tile_id = tiles[tile]['tile_id']
+            if not isinstance(tile_id, int):
+                logger.debug('DB INSERT TILE TAGS ID: {}'.format(
+                    tile_id))
+
+                to_insert = {
+                    'tile_id': tile_id,
+                    'tagger_id': tagger,
+                    'solid': tiles[tile]['solid'],
+                    'movable': tiles[tile]['movable'],
+                    'destroyable': tiles[tile]['destroyable'],
+                    'dangerous': tiles[tile]['dangerous'],
+                    'gettable': tiles[tile]['gettable'],
+                    'portal': tiles[tile]['portal'],
+                    'usable': tiles[tile]['usable'],
+                    'changeable': tiles[tile]['changeable'],
+                    'ui': tiles[tile]['ui'],
+                    'permeable': tiles[tile]['permeable'],
+                    'dt': datetime.now()
+                }
+                print(f'to insert: {to_insert}')
+                # db.insert_tile_tag(tiles[tile]['tile_id'], tagger, tiles[tile]['solid'], tiles[tile]['movable'],
+                #                    tiles[tile]['destroyable'], tiles[tile]['dangerous'], tiles[tile]['gettable'], tiles[tile]['portal'], tiles[tile]['usable'], tiles[tile]['changeable'], tiles[tile]['ui'])
+                insert_count += 1
+                db.insert_tile_tag(to_insert)
+            else:
+                skip_count += 1
+
+        logger.debug('INSERTED {} Tile Tags. SKIPPED {} Tiles. SUBMITTED: {}'.format(
+            insert_count, skip_count, len(tiles)))
+
+        tag_images = data['tag_images']
+        affordance_count = 0
+        for affordance in tag_images:
+            b64_channel = tag_images[affordance]
+            print(b64_channel)
+            print('unbase 64', type(b64_channel))
+            tag_data_bytes = base64.b64decode(b64_channel)
+            # affordance_num = P.AFFORDANCES.index(affordance)
+            logger.debug('DB INSERT IMAGE TAGS for afford: {}, data type: {}'.format(
+                affordance, type(tag_data_bytes)))
+
+            to_insert = {
+                'image_id': image_id,
+                'affordance': affordance,
+                'tagger': tagger,
+                'data': tag_data_bytes,
+                'dt': datetime.now(),
+            }
+            print(f'to insert: {to_insert}')
+            db.insert_screenshot_tag(to_insert)
+            # db.insert_screenshot_tag(image_id, affordance_num, tagger, to_insert)
+        logger.debug(f'num affordance channels: {len(tag_images)}')
+
+        return json.dumps(dict(the_data=data), indent=4)
         d = self.db.insert(first_name, last_name, age)
         d.addCallback(self.onSuccess, request, 'Insert success')
         d.addErrback(self.onFail, request, 'Insert failed')
@@ -155,21 +266,23 @@ class VGAC_App(object):
 
     @app.route('/screenshot', methods=['GET'])
     def randScreenshot(self, request):
-        d = self.db.get_random_screenshot()
-        d.addCallback(self.screenshotJSON, request)
-        d.addErrback(self.onFail, request, 'Failed to query db')
-        return d
-
-    @app.route('/untagged_screenshot/<string:tagger_id>', methods=['GET'])
-    def queryUn(self, request, tagger_id):
+        str_args = dict_decode(request.args)
+        tagger_id = str_args.get('tagger', ['default'])[0]
         d = self.db.get_untagged_screenshot(tagger_id=tagger_id)
         d.addCallback(self.screenshotJSON, request)
         d.addErrback(self.onFail, request, 'Failed to query db')
         return d
 
+    # @app.route('/screenshots/<string:tagger_id>', methods=['GET'])
+    # def queryUn(self, request, tagger_id):
+    #     d = self.db.get_untagged_screenshot(tagger_id=tagger_id)
+    #     d.addCallback(self.screenshotJSON, request)
+    #     d.addErrback(self.onFail, request, 'Failed to query db')
+    #     return d
+
     @app.route('/screenshots/<string:image_id>', methods=['GET'])
     def screenshotById(self, request, image_id):
-        d = self.db.get_screenshot_by_id(image_id=image_id)
+        d = self.db.get_resource_by_id(table='screenshots', col='image_id', resource_id=image_id)
         d.addCallback(self.screenshotJSON, request)
         d.addErrback(self.onFail, request, 'Failed to query db')
         return d
@@ -182,8 +295,25 @@ class VGAC_App(object):
         return d
 
     @app.route('/tiles/<string:tile_id>', methods=['GET'])
-    def tagsById(self, request, tile_id):
-        d = self.db.get_tile_by_id(tile_id=tile_id)
+    def tileById(self, request, tile_id):
+        d = self.db.get_resource_by_id(table='tiles',col='tile_id', resource_id=tile_id)
+        d.addCallback(self.tileJSON, request)
+        d.addErrback(self.onFail, request, 'Failed to query db')
+        return d
+
+    @app.route('/tiles/<string:tile_id>/affordances', methods=['GET'])
+    def tileAffordanceById(self, request, tile_id):
+        d = self.db.get_tile_affordances(tile_id=tile_id)
+        d.addCallback(self.tileJSON, request)
+        d.addErrback(self.onFail, request, 'Failed to query db')
+        return d
+
+    @app.route('/tiles', methods=['GET'])
+    def tilesBase(self, request):
+        str_args = dict_decode(request.args)
+        game_name = str_args.get('game', ['default'])[0]
+
+        d = self.db.get_tiles_by_game(game_name)
         d.addCallback(self.tileJSON, request)
         d.addErrback(self.onFail, request, 'Failed to query db')
         return d
@@ -265,5 +395,5 @@ class VGAC_App(object):
         return json.dumps(responseJSON)
 
 if __name__ == '__main__':
-    webapp = VGAC_App()
+    webapp = VGAC_DBAPI()
     webapp.app.run('localhost', 5000)
