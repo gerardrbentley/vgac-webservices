@@ -75,22 +75,36 @@ def metadata_from_json(screenshots_dir, file_uuid):
                 'x_offset': 0
             }
 
+def stack_numpy_channels(affordance_images):
+    height, width, *_ = affordance_images[0].shape
+    output = np.zeros((height, width, 10))
+    print(
+        f'GEN numpy array of dims {output.shape} for aff_image {affordance_images[0].shape}')
+    for i in range(10):
+        one_channel = affordance_images[i].copy()
+        output[:, :, i] = one_channel // 255
+    return output
+
 class DB_Manager(object):
     def __init__(self, **kwargs):
-        connargs = {'dbname': 'postgres',
-            'user': 'postgres',
-            'host': '192.168.99.102',
-            'port': '5432'}
-        self.connection = psycopg2.connect(**connargs)
+        keys = {'host': os.getenv('POSTGRES_HOST', 'vgac-db'),
+            'port': os.getenv('POSTGRES_PORT', '5432'),
+            'dbname': os.getenv('POSTGRES_DB', 'vgac-db'),
+            'user': os.getenv('POSTGRES_USER', 'faim-lab'),
+            'password': os.getenv('POSTGRES_PASSWORD', 'dev'),
+            'cursor_factory': DictCursor
+        }
+        print(keys)
+        self.connection = psycopg2.connect(**keys)
         # self.cursor = connection.cursor()
 
-    def ingest_filesystem_data(self, dir):
+    def ingest_filesystem_data(self, dir=os.path.join('games')):
         total_ingested = {}
         for game in list_games(dir):
             num_images, num_tags, num_skipped = self.ingest_screenshots(
                 game, os.path.join(dir, game, 'screenshots'))
 
-            num_tiles, num_tile_tags, num_tile_skipped = ingest_tiles(game, os.path.join(dir, game, 'tiles'))
+            num_tiles, num_tile_tags, num_tile_skipped = self.ingest_tiles(game, os.path.join(dir, game, 'tiles'))
             # ingest_sprite_files(sprite_files, game), dir
             total_ingested[game] = {
                     'num_images': num_images, 'num_screenshot_tags': num_tags, 'num_tiles': num_tiles, 'skipped_images': num_skipped}
@@ -250,6 +264,133 @@ class DB_Manager(object):
                 ctr += 1
         return ctr, tag_ctr, skip_ctr
 
+    def export_to_filesystem(self, dest='/app/out_dataset'):
+        game_names = self.get_game_names()
+        print(type(game_names))
+        print(f'exporting data for games: {game_names}')
+        total_exported = {}
+        for game in game_names:
+            game = game['game']
+            screenshot_ctr = 0
+
+            game_path = os.path.join(dest, game)
+            os.makedirs(os.path.join(game_path, 'screenshots'), exist_ok=True)
+            os.makedirs(os.path.join(game_path, 'tiles'), exist_ok=True)
+            os.makedirs(os.path.join(game_path, 'sprites'), exist_ok=True)
+
+            print(f'Made Directories for game: {game}, {game_path}')
+            screenshots = self.get_screenshots_by_game(game)
+            print(type(screenshots))
+            print(f'Exporting {len(screenshots)} screenshots for {game}')
+            for screenshot in screenshots:
+                image_id = screenshot['image_id']
+                image_folder = os.path.join(
+                    game_path, 'screenshots', str(image_id))
+                os.makedirs(image_folder, exist_ok=True)
+
+                image_file = os.path.join(image_folder, f'{image_id}.png')
+                with open(image_file, 'wb') as file:
+                    file.write(screenshot['data'].tobytes())
+                # orig_cv, encoded_img = P.from_data_to_cv(screenshot['data'])
+                # print(
+                #     f'saving file: {image_file}  -- {orig_cv.shape} {type(orig_cv)}')
+                # cv2.imwrite(image_file, orig_cv)
+                self.save_labels(image_id, image_folder)
+                meta = {
+                    'y_offset': screenshot['y_offset'],
+                    'x_offset': screenshot['x_offset'],
+                    'crop_l': screenshot['crop_l'],
+                    'crop_r': screenshot['crop_r'],
+                    'crop_b': screenshot['crop_b'],
+                    'crop_t': screenshot['crop_t'],
+                    'ui_x': screenshot['ui_x'],
+                    'ui_y': screenshot['ui_y'],
+                    'ui_width': screenshot['ui_width'],
+                    'ui_height': screenshot['ui_height'],
+                }
+                with open(os.path.join(
+                        image_folder, f'{str(image_id)}.json'), 'w') as file:
+                    json.dump(meta, file)
+
+            tiles = self.get_tiles_by_game(game)
+            print(f'Exporting {len(tiles)} screenshots for {game}')
+            tiles_folder = os.path.join(game_path, 'tiles')
+            os.makedirs(tiles_folder, exist_ok=True)
+            to_csv = []
+            for tile in tiles:
+                tile_id = tile['tile_id']
+
+                tile_file = os.path.join(tiles_folder, f'{tile_id}.png')
+                with open(tile_file, 'wb') as file:
+                    file.write(tile['data'].tobytes())
+                # orig_cv, encoded_img = P.from_data_to_cv(tile['data'])
+                # print(
+                #     f'saving file: {tile_file}  -- {orig_cv.shape} {type(orig_cv)}')
+                # cv2.imwrite(tile_file, orig_cv)
+
+                tile_tag_entries = self.get_tile_affordances(tile_id)
+                for db_entry in tile_tag_entries:
+                    print(db_entry)
+                    print(type(db_entry))
+                    print(db_entry.items())
+
+                    to_insert = {k:v for k,v in db_entry.items()}
+                    # db_entry['file_name'] = db_entry.pop('tile_id')
+                    to_csv.append(to_insert)
+            with open(os.path.join(tiles_folder, 'tile_affordances.csv'), mode='w') as csv_file:
+                fieldnames = ["tile_id", "solid", "movable", "destroyable",
+                              "dangerous", "gettable", "portal", "usable", "changeable", "ui", "permeable", "tagger_id"]
+                writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction='ignore')
+                writer.writeheader()
+                for row in to_csv:
+                    writer.writerow(row)
+        return 1
+
+    def save_labels(self, image_uuid, image_folder):
+        # label_file = os.path.join(image_folder, 'label', f'{image_uuid}.npy')
+        db_entries = self.get_screenshot_affordances(image_uuid)
+        row_ctr = 0
+        if len(db_entries) % 10 != 0:
+            print('NOT MOD 10 TAG ENTRIES FOR IMAGE: {}'.format(image_uuid))
+        # print('NUM ROWS OF AFFORDANCES {} FOR IMAGE {}'.format(
+        #     len(db_entries), image_uuid))
+        to_insert = {}
+        for db_entry in db_entries:
+            # label_to_convert = []
+            tagger_id = db_entry['tagger_id']
+            if tagger_id not in to_insert:
+                to_insert[tagger_id] = {}
+            aff = db_entry['affordance']
+            # for affordance in AFFORDANCES:
+            #     db_entry = db_entries[row_ctr]
+                # print(type(db_entry.data))
+                # if db_entry.affordance != affordance:
+                #     print('AFFORDANCES IN WRONG ORDER, ', db_entry.affordance)
+                # tag_cv, encoded = P.from_data_to_cv(db_entry['tags'])
+            to_insert[tagger_id][aff] = db_entry['data']
+            # row_ctr += 1
+        for tagger in to_insert:
+            # print(tagger)
+            # print(to_insert[tagger].keys())
+            label_to_convert = []
+            for affordance in AFFORDANCES:
+                # print(affordance)
+                d = to_insert[tagger][affordance].tobytes()
+                # print(type(d))
+                # print((d))
+
+                # arrayform = np.frombuffer(d, dtype=np.uint8)
+                conv = np.asarray(Image.open(io.BytesIO(d)), dtype=np.uint8)
+                # print(type(conv))
+                label_to_convert.append(conv)
+
+            stacked_array = stack_numpy_channels(label_to_convert)
+            pth = os.path.join(image_folder, f'{tagger}.npy')
+            print(f'NUMPY SAVE: saving file: {pth}')
+            np.save(os.path.join(image_folder, f'{tagger}.npy'), stacked_array)
+
+
+
     def init_tables(self):
         print('Making Tables')
         screenshot_table = sql.SQL(
@@ -395,6 +536,76 @@ class DB_Manager(object):
             return res[0]
         return False
 
+    def get_game_names(self):
+        cmd = sql.SQL(
+            """SELECT DISTINCT game FROM {};
+            """
+        ).format(sql.Identifier('screenshots'))
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                cursor.execute(cmd)
+                res = cursor.fetchall()
+        if res is not None:
+            return res
+        return []
+
+    def get_screenshots_by_game(self, game):
+        cmd = sql.SQL(
+            """SELECT * FROM {}
+            WHERE game = %(game)s;
+            """
+        ).format(sql.Identifier('screenshots'))
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                cursor.execute(cmd, {'game': game})
+                res = cursor.fetchall()
+        if res is not None:
+            return res
+        return []
+
+    def get_screenshot_affordances(self, image_id='default'):
+        cmd = sql.SQL(
+            """SELECT image_id, affordance, data, tagger_id FROM screenshot_tags
+            WHERE image_id = %(image_id)s ORDER BY tagger_id, affordance;
+            """
+        )
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                cursor.execute(cmd, {'image_id': image_id})
+                res = cursor.fetchall()
+        if res is not None:
+            return res
+        return []
+
+    def get_tiles_by_game(self, game='default'):
+        cmd = sql.SQL(
+            """SELECT * FROM tiles
+            WHERE game = %(game)s;
+            """
+        )
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                cursor.execute(cmd, {'game': game})
+                res = cursor.fetchall()
+        if res is not None:
+            return res
+        return []
+
+    def get_tile_affordances(self, tile_id='default'):
+        cmd = sql.SQL(
+            """SELECT * FROM tile_tags
+            WHERE tile_id = %(tile_id)s;
+            """
+        )
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                cursor.execute(cmd, {'tile_id': tile_id})
+                res = cursor.fetchall()
+        if res is not None:
+            return res
+        return []
+
+
     ####INSERTION SQL
     def insert_screenshot(self, kwargs):
         cmd = sql.SQL(
@@ -461,11 +672,11 @@ if __name__ == '__main__':
     print('ingesting')
     manage = DB_Manager()
     print('manage made')
-    manage.drop_all()
-    print('dropped all')
-    manage.init_tables()
-    print('made all tables')
-    manage.ingest_screenshots('sm3', '../tagger/eventgames/sm3/screenshots/')
-    manage.ingest_tiles('sm3', '../tagger/eventgames/sm3/tiles/')
-    print('ingested screenshtos and tiles, closing')
-    manage.close()
+    # manage.drop_all()
+    # print('dropped all')
+    # manage.init_tables()
+    # print('made all tables')
+    # manage.ingest_screenshots('sm3', '../tagger/eventgames/sm3/screenshots/')
+    # manage.ingest_tiles('sm3', '../tagger/eventgames/sm3/tiles/')
+    # print('ingested screenshtos and tiles, closing')
+    # manage.close()

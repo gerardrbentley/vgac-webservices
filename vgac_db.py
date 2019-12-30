@@ -1,6 +1,7 @@
 import json
 import base64
 import datetime
+import os
 
 from klein import Klein
 from twisted.web.static import File
@@ -11,26 +12,31 @@ from psycopg2 import sql
 def dict_decode(bytes_keys_values):
     return {k.decode('utf-8'):list(map(lambda x: x.decode('utf-8'), v)) for (k,v) in bytes_keys_values.items()}
 
+IMAGE_BASE = "data:image/png;base64,{}"
+def b64_string(data):
+    return IMAGE_BASE.format((base64.b64encode(data)).decode('utf-8'))
 
 class VGAC_Database(object):
 
     def succConnectionPool(conn):
         pid = conn.get_backend_pid()
         print("New DB connection created (backend PID {})".format(pid))
-
+    keys = {    'host': os.getenv('POSTGRES_HOST', 'vgac-db'),
+        'port': os.getenv('POSTGRES_PORT', '5432'),
+        'database': os.getenv('POSTGRES_DB', 'vgac-db'),
+        'user': os.getenv('POSTGRES_USER', 'faim-lab'),
+        'password': os.getenv('POSTGRES_PASSWORD', 'dev'),
+    }
+    print(keys)
     dbpool = adbapi.ConnectionPool('psycopg2',
-                                    host = '192.168.99.102',
-                                    port = 5432,
-                                    database = 'postgres',
-                                    user = 'postgres',
-                                    password = '',
                                     cp_min = 3,
                                     cp_max = 10,
                                     cp_noisy = True,
                                     cp_openfun = succConnectionPool,
                                     cp_reconnect = True,
                                     cp_good_sql = "SELECT 1",
-                                    cursor_factory = DictCursor)
+                                    cursor_factory = DictCursor,
+                                    **keys)
     table = 'screenshots'
     # dbpool.start()
     def logInsert(op):
@@ -359,8 +365,9 @@ class VGAC_DBAPI(object):
                     'ui_height': record['ui_height'],
                 }
             data = record['data']
-            enc = base64.b64encode(data)
-            strf = enc.decode('utf-8')
+            # enc = base64.b64encode(data)
+            # strf = enc.decode('utf-8')
+            strf = b64_string(data)
             mapper['data'] = strf
             responseJSON.append(mapper)
         return json.dumps(responseJSON)
@@ -375,8 +382,9 @@ class VGAC_DBAPI(object):
                     'tagger_id': record['tagger_id'],
                 }
             data = record['data']
-            enc = base64.b64encode(data)
-            strf = enc.decode('utf-8')
+            # enc = base64.b64encode(data)
+            # strf = enc.decode('utf-8')
+            strf = b64_string(data)
             mapper['data'] = strf
             # if record['affordance'] == 'solid':
             responseJSON.append(mapper)
@@ -393,8 +401,9 @@ class VGAC_DBAPI(object):
                     'height': record['height'],
                 }
             data = record['data']
-            enc = base64.b64encode(data)
-            strf = enc.decode('utf-8')
+            # enc = base64.b64encode(data)
+            # strf = enc.decode('utf-8')
+            strf = b64_string(data)
             mapper['data'] = strf
             # if record['affordance'] == 'solid':
             responseJSON.append(mapper)

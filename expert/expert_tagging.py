@@ -5,12 +5,17 @@ from twisted.internet.defer import inlineCallbacks
 import treq
 
 import json
+import os
+import base64
 
 from klein_helpers import dict_decode, unique_tiles_using_meta
 
 class ExpertTagger(object):
-
     app = Klein()
+
+    def __init__(self):
+        self.BASE_URL = str(os.getenv('HOST', 'http://dbapi:5000'))
+
 
     @app.route("/test")
     def test(self, request):
@@ -29,7 +34,7 @@ class ExpertTagger(object):
 
         print('Fetching image for tagger: {}'.format(tagger_id))
 
-        image_data = yield treq.get('http://localhost:5000/screenshot', params={'tagger': tagger_id})
+        image_data = yield treq.get(self.BASE_URL+'/screenshot', params={'tagger': tagger_id})
         image_data = yield image_data.json()
         image_data = image_data[0]
 
@@ -45,7 +50,7 @@ class ExpertTagger(object):
         print(f'image meta info: {meta}')
 
         unique_tiles = unique_tiles_using_meta(
-            (image_string), **meta)
+            image_string, **meta)
 
         tiles_to_tag = yield self.get_tile_ids(unique_tiles, game)
         # map_dict(encode_tile_from_dict, tiles_to_tag)
@@ -68,7 +73,7 @@ class ExpertTagger(object):
     @inlineCallbacks
     def get_tile_ids(self, unique_tiles, game):
         print('gettin ids')
-        tile_data = yield treq.get('http://localhost:5000/tiles', params={'game': game})
+        tile_data = yield treq.get(self.BASE_URL+'/tiles', params={'game': game})
         tile_data = yield tile_data.json()
         # print(tile_data)
         known_game_tiles = tile_data
@@ -81,9 +86,26 @@ class ExpertTagger(object):
             to_compare = screenshot_tile['tile_data']
             is_in_db = False
             for tile_info in known_game_tiles:
-                cv_img, encoded_img = P.from_data_to_cv(tile_info['data'])
-                err = P.mse(to_compare, (cv_img))
-                if err < 0.001:
+                # cv_img, encoded_img = P.from_data_to_cv(tile_info['data'])
+                # err = P.mse(to_compare, (cv_img))
+                # if err < 0.001:
+                #     is_in_db = True
+                #     hit_ctr += 1
+                #     # print("MATCHED {}".format(tile_info['tile_id']))
+                #     # print("NUM LOCS {}".format(
+                #     #     len(screenshot_tile['locations'])))
+                #     tiles_to_tag['tile_{}'.format(idx)] = {
+                #         'tile_id': tile_info['tile_id'],
+                #         'tile_data': b64_string(P.from_cv_to_bytes(to_compare)),
+                #         'locations': screenshot_tile['locations']
+                #         }
+                #     break
+                b64_tile = tile_info['data']
+                print(b64_tile)
+                print('.')
+                print(to_compare)
+                print('...')
+                if b64_tile == to_compare:
                     is_in_db = True
                     hit_ctr += 1
                     # print("MATCHED {}".format(tile_info['tile_id']))
@@ -91,7 +113,7 @@ class ExpertTagger(object):
                     #     len(screenshot_tile['locations'])))
                     tiles_to_tag['tile_{}'.format(idx)] = {
                         'tile_id': tile_info['tile_id'],
-                        'tile_data': b64_string(P.from_cv_to_bytes(to_compare)),
+                        'tile_data': to_compare,
                         'locations': screenshot_tile['locations']
                         }
                     break
@@ -100,7 +122,7 @@ class ExpertTagger(object):
                 miss_ctr += 1
                 tiles_to_tag['tile_{}'.format(idx)] = {
                     'tile_id': -1,
-                    'tile_data': b64_string(P.from_cv_to_bytes(to_compare)),
+                    'tile_data': to_compare,
                     'locations': screenshot_tile['locations']
                     }
             # idx = 0

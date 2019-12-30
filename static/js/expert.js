@@ -540,13 +540,13 @@ function myFunction()
 //         //     output = //get tagger id from somewhere later (?)
 //         //     {
 //         //         "tagger_id":"TestTagger",
-//         //         "image_id":mydata['output']['image_id']
+//         //         "image_id":mydata["output"]["image_id"]
 //         //     };
-//         //     for (var index = 0; index < Object.keys(mydata['output']['tiles']).length; index++)
+//         //     for (var index = 0; index < Object.keys(mydata["output"]['tiles']).length; index++)
 //         //     {
 //         //         //console.log('inside for');
 //         //         var tile_index = 'tile_' + index;
-//         //         var act_tile = mydata['output']['tiles'][tile_index];
+//         //         var act_tile = mydata["output"]['tiles'][tile_index];
 //         //         //console.log(act_tile);
 //         //         out_tiles[tile_index] =
 //         //         {
@@ -570,13 +570,13 @@ function myFunction()
 //             output = //get tagger id from somewhere later (?)
 //             {
 //                 "tagger_id":"TestTagger",
-//                 "image_id":mydata['output']['image_id']
+//                 "image_id":mydata["output"]["image_id"]
 //             };
-//             for (var index = 0; index < Object.keys(mydata['output']['tiles']).length; index++)
+//             for (var index = 0; index < Object.keys(mydata["output"]['tiles']).length; index++)
 //             {
 //                 //console.log('inside for');
 //                 var tile_index = 'tile_' + index;
-//                 var act_tile = mydata['output']['tiles'][tile_index];
+//                 var act_tile = mydata["output"]['tiles'][tile_index];
 //                 //console.log(act_tile);
 //                 out_tiles[tile_index] =
 //                 {
@@ -981,30 +981,30 @@ window.addEventListener('load', function()
     console.log('on load')
     fetch_data();
     // var solid_img = document.getElementById('solid');
-    // solid_img.src = mydata['output']['image'];
+    // solid_img.src = mydata["output"]['image'];
     // var solid_img = document.getElementById('solid');
-    // solid_img.src = mydata['output']['image'];
+    // solid_img.src = mydata["output"]['image'];
     // var mov_img = document.getElementById('movable');
-    // mov_img.src = mydata['output']['image'];
+    // mov_img.src = mydata["output"]['image'];
     // var dest_img = document.getElementById('destroyable');
-    // dest_img.src = mydata['output']['image'];
+    // dest_img.src = mydata["output"]['image'];
     // var dang_img = document.getElementById('dangerous');
-    // dang_img.src = mydata['output']['image'];
+    // dang_img.src = mydata["output"]['image'];
     // var get_img = document.getElementById('gettable');
-    // get_img.src = mydata['output']['image'];
+    // get_img.src = mydata["output"]['image'];
     // var port_img = document.getElementById('portal');
-    // port_img.src = mydata['output']['image'];
+    // port_img.src = mydata["output"]['image'];
     // var us_img = document.getElementById('usable');
-    // us_img.src = mydata['output']['image'];
+    // us_img.src = mydata["output"]['image'];
     // var chang_img = document.getElementById('changeable');
-    // chang_img.src = mydata['output']['image'];
+    // chang_img.src = mydata["output"]['image'];
     // var ui_img = document.getElementById('ui');
-    // ui_img.src = mydata['output']['image'];
+    // ui_img.src = mydata["output"]['image'];
     // var scrn_img = document.getElementById('screenshot_preview');
-    // scrn_img.src = mydata['output']['image'];
+    // scrn_img.src = mydata["output"]['image'];
     // var tile_tmp = document.getElementById('tile');
-    // tile_tmp.src = mydata['output']['tiles']['tile_0']['tile_data'];
-    // var poses = mydata['output']['tiles']['tile_' + num]['locations'];
+    // tile_tmp.src = mydata["output"]['tiles']['tile_0']['tile_data'];
+    // var poses = mydata["output"]['tiles']['tile_' + num]['locations'];
     // for(i = 0; i < Object.keys(poses).length; i++)
     // {
     //     pos_x = poses['location_' + i]['x'];
@@ -1016,23 +1016,24 @@ window.addEventListener('load', function()
 function fetch_data(){
   console.log(mydata)
   tagger_id = document.getElementById("tagger_id").getAttribute('tagger')
-  temp_url = "/expert?tagger-id=" + tagger_id
-  $.get(temp_url, function(json)
+  temp_url = "/expert/get_image?tagger=" + tagger_id
+  $.getJSON(temp_url, function(json)
   {
       mydata = json;
-      console.log(mydata); // this will show the info it in firebug console
+      console.log(mydata);
+      console.log(mydata["output"]) // this will show the info it in firebug console
       output = //get tagger id from somewhere later (?)
       {
           "tagger_id":tagger_id,
-          "image_id":mydata['output']['image_id']
+          "image_id":mydata.output.image_id
       };
       console.log('output w/ tagger')
       console.log(output)
-      for (var index = 0; index < Object.keys(mydata['output']['tiles']).length; index++)
+      for (var index = 0; index < Object.keys(mydata["output"]['tiles']).length; index++)
       {
           //console.log('inside for');
           var tile_index = 'tile_' + index;
-          var act_tile = mydata['output']['tiles'][tile_index];
+          var act_tile = mydata.output.tiles[tile_index];
           //console.log(act_tile);
           out_tiles[tile_index] =
           {
@@ -1054,45 +1055,47 @@ function fetch_data(){
 }
 
 function update_images(){
+    console.log(mydata["output"]['image'])
+    console.log(mydata["output"]['solid'])
     var drawinn_img = document.getElementById('drawer');
-    drawinn_img.src = mydata['output']['image'];
+    drawinn_img.src = mydata["output"]['image'];
     var solid_img = document.getElementById('solid');
-    solid_img.src = mydata['output']['image'];
+    solid_img.src = mydata["output"]['image'];
     var solid_img = document.getElementById('solid');
-    solid_img.src = mydata['output']['image'];
+    solid_img.src = mydata["output"]['image'];
     var mov_img = document.getElementById('movable');
-    mov_img.src = mydata['output']['image'];
+    mov_img.src = mydata["output"]['image'];
     var dest_img = document.getElementById('destroyable');
-    dest_img.src = mydata['output']['image'];
+    dest_img.src = mydata["output"]['image'];
     var dang_img = document.getElementById('dangerous');
-    dang_img.src = mydata['output']['image'];
+    dang_img.src = mydata["output"]['image'];
     var get_img = document.getElementById('gettable');
-    get_img.src = mydata['output']['image'];
+    get_img.src = mydata["output"]['image'];
     var port_img = document.getElementById('portal');
-    port_img.src = mydata['output']['image'];
+    port_img.src = mydata["output"]['image'];
     var us_img = document.getElementById('usable');
-    us_img.src = mydata['output']['image'];
+    us_img.src = mydata["output"]['image'];
     var chang_img = document.getElementById('changeable');
-    chang_img.src = mydata['output']['image'];
+    chang_img.src = mydata["output"]['image'];
     var ui_img = document.getElementById('ui');
-    ui_img.src = mydata['output']['image'];
+    ui_img.src = mydata["output"]['image'];
     var scrn_img = document.getElementById('screenshot_preview');
-    scrn_img.src = mydata['output']['image'];
+    scrn_img.src = mydata["output"]['image'];
     var tile_tmp = document.getElementById('tile');
-    tile_tmp.src = mydata['output']['tiles']['tile_0']['tile_data'];
+    tile_tmp.src = mydata["output"]['tiles']['tile_0']['tile_data'];
 
-    document.getElementById("curr_tiles").textContent=String(num) + "/" + String(Object.keys(mydata['output']['tiles']).length) + " Tiles";
+    document.getElementById("curr_tiles").textContent=String(num) + "/" + String(Object.keys(mydata["output"]['tiles']).length) + " Tiles";
 
 
-    grid_movex = mydata['output']['x_offset']
-    grid_movey = mydata['output']['y_offset']
+    grid_movex = mydata["output"]['x_offset']
+    grid_movey = mydata["output"]['y_offset']
     console.log(grid_movex)
     console.log(grid_movey)
     //drawGrid(canvas_draw, 256, 224, GRID_SIZE, 'rgb(250, 25, 25)')
     check_grid_on = 1;
     grid_checked = 1;
 
-    var poses = mydata['output']['tiles']['tile_' + num]['locations'];
+    var poses = mydata["output"]['tiles']['tile_' + num]['locations'];
     for(i = 0; i < Object.keys(poses).length; i++)
     {
         pos_x = poses['location_' + i]['x'];
@@ -1115,7 +1118,7 @@ function send_output_to_server(){
     console.log(output)
 
     $.ajax({
-      url: "/insert",
+      url: "/api/insert",
       type: "post",
       data: JSON.stringify(output),
       contentType: "application/json",
@@ -1168,7 +1171,7 @@ function send_output_to_server(){
 function flip_affordance(whichcheckbox, whichcanvas){
     if(whichcheckbox.checked)
     {
-        poses = mydata['output']['tiles']['tile_' + num]['locations'];
+        poses = mydata["output"]['tiles']['tile_' + num]['locations'];
         for(i = 0; i < Object.keys(poses).length; i++)
         {
             pos_x = poses['location_' + i]['x'];
@@ -1180,7 +1183,7 @@ function flip_affordance(whichcheckbox, whichcanvas){
 
     }
     else{
-        poses = mydata['output']['tiles']['tile_' + num]['locations'];
+        poses = mydata["output"]['tiles']['tile_' + num]['locations'];
         for(i = 0; i < Object.keys(poses).length; i++)
         {
             pos_x = poses['location_' + i]['x'];
@@ -1213,8 +1216,8 @@ document.onkeydown = function(event)
 {
     var pos_x = 0;
     var pos_y = 0;
-    var tiles = mydata['output']['tiles'];
-    var poses = mydata['output']['tiles']['tile_' + num]['locations'];
+    var tiles = mydata["output"]['tiles'];
+    var poses = mydata["output"]['tiles']['tile_' + num]['locations'];
     switch (event.keyCode)
     {
         case 8: //Backspace
@@ -1237,7 +1240,7 @@ document.onkeydown = function(event)
                 }
 
                 tile.src = tiles['tile_' + num]['tile_data'];
-                poses = mydata['output']['tiles']['tile_' + num]['locations'];
+                poses = mydata["output"]['tiles']['tile_' + num]['locations'];
 
                 for(i = 0; i < Object.keys(poses).length; i++)
                 {
@@ -1257,7 +1260,7 @@ document.onkeydown = function(event)
                 checkC.checked = false;
                 //
                 saveAffordanceImages();
-                document.getElementById("curr_tiles").textContent=String(num) + "/" + String(Object.keys(mydata['output']['tiles']).length) + " Tiles";
+                document.getElementById("curr_tiles").textContent=String(num) + "/" + String(Object.keys(mydata["output"]['tiles']).length) + " Tiles";
         break;
         case 13: //ENTER
             if(grid_checked)
@@ -1281,7 +1284,7 @@ document.onkeydown = function(event)
                 }
 
                 tile.src = tiles['tile_' + num]['tile_data'];
-                poses = mydata['output']['tiles']['tile_' + num]['locations'];
+                poses = mydata["output"]['tiles']['tile_' + num]['locations'];
                 //drawGrid(canvas_draw, 256, 224, GRID_SIZE, 'rgb(250, 25, 25)')
                 for(i = 0; i < Object.keys(poses).length; i++)
                 {
@@ -1302,7 +1305,7 @@ document.onkeydown = function(event)
                 checkC.checked = false;
                 //
                 saveAffordanceImages();
-                document.getElementById("curr_tiles").textContent=String(num) + "/" + String(Object.keys(mydata['output']['tiles']).length) + " Tiles";
+                document.getElementById("curr_tiles").textContent=String(num) + "/" + String(Object.keys(mydata["output"]['tiles']).length) + " Tiles";
 
             }
             else
@@ -1353,7 +1356,7 @@ document.onkeydown = function(event)
         case 27: // ECS
             if(!is_big)
             {
-                poses = mydata['output']['tiles']['tile_' + num]['locations'];
+                poses = mydata["output"]['tiles']['tile_' + num]['locations'];
                 for(i = 0; i < Object.keys(poses).length; i++)
                 {
                     pos_x = poses['location_' + i]['x'];
