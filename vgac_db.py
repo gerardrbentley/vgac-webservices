@@ -1,6 +1,6 @@
 import json
 import base64
-import datetime
+from datetime import datetime
 import os
 
 from klein import Klein
@@ -15,6 +15,20 @@ def dict_decode(bytes_keys_values):
 IMAGE_BASE = "data:image/png;base64,{}"
 def b64_string(data):
     return IMAGE_BASE.format((base64.b64encode(data)).decode('utf-8'))
+
+def logInsert(op):
+    print('logInsert')
+    if op:
+        print(op)
+    else:
+        print("no operation done")
+def logErr(op):
+    print('logErr')
+    if op:
+        print(op)
+    else:
+        print("no operation done, error")
+
 
 class VGAC_Database(object):
 
@@ -39,12 +53,7 @@ class VGAC_Database(object):
                                     **keys)
     table = 'screenshots'
     # dbpool.start()
-    def logInsert(op):
-        print('logInsert')
-        if op:
-            print(op)
-        else:
-            print("no operation done")
+
 
     def _insert(self, cursor, first, last, age):
         insert_stmt = 'INSERT INTO %s (first_name, last_name, age) VALUES ("%s", "%s", %d)' % (self.table, first, last, age)
@@ -56,13 +65,13 @@ class VGAC_Database(object):
     def insert_screenshot_tag(self, kwargs):
         cmd = sql.SQL(
             """INSERT INTO screenshot_tags(image_id, affordance, tagger_id, created_on, data)
-            VALUES(%(image_id)s, %(affordance)s, %(tagger)s, %(dt)s, %(data)s)
+            VALUES(%(image_id)s, %(affordance)s, %(tagger_id)s, %(dt)s, %(data)s)
             ON CONFLICT ON CONSTRAINT screenshot_tags_pkey
             DO UPDATE SET data = %(data)s
             RETURNING image_id
             """
         )
-        self.dbpool.runOperation(cmd, kwargs).addCallback(logInsert)
+        self.dbpool.runOperation(cmd, kwargs).addCallbacks(logInsert, logErr)
         print('Insert Screenshot tag Called and Ended')
 
     def insert_tile(self, kwargs):
@@ -72,7 +81,7 @@ class VGAC_Database(object):
             RETURNING tile_id
             """
         )
-        self.dbpool.runOperation(cmd, kwargs).addCallback(logInsert)
+        self.dbpool.runOperation(cmd, kwargs).addCallbacks(logInsert, logErr)
         print('Insert Tile Called and Ended')
 
     def insert_tile_tag(self, kwargs):
@@ -85,7 +94,7 @@ class VGAC_Database(object):
             """
         )
 
-        self.dbpool.runOperation(cmd, kwargs).addCallback(logInsert)
+        self.dbpool.runOperation(cmd, kwargs).addCallbacks(logInsert, logErr)
         print('Insert Tile Tag Called and Ended')
 
     def queryAll(self):
@@ -218,33 +227,33 @@ class VGAC_DBAPI(object):
         for tile in tiles:
             tile_id = tiles[tile]['tile_id']
             if not isinstance(tile_id, int):
-                logger.debug('DB INSERT TILE TAGS ID: {}'.format(
+                print('DB INSERT TILE TAGS ID: {}'.format(
                     tile_id))
 
                 to_insert = {
                     'tile_id': tile_id,
-                    'tagger_id': tagger,
-                    'solid': tiles[tile]['solid'],
-                    'movable': tiles[tile]['movable'],
-                    'destroyable': tiles[tile]['destroyable'],
-                    'dangerous': tiles[tile]['dangerous'],
-                    'gettable': tiles[tile]['gettable'],
-                    'portal': tiles[tile]['portal'],
-                    'usable': tiles[tile]['usable'],
-                    'changeable': tiles[tile]['changeable'],
-                    'ui': tiles[tile]['ui'],
-                    'permeable': tiles[tile]['permeable'],
+                    'tagger_id': tagger_id,
+                    'solid': bool(int(tiles[tile]['solid'])),
+                    'movable': bool(int(tiles[tile]['movable'])),
+                    'destroyable': bool(int(tiles[tile]['destroyable'])),
+                    'dangerous': bool(int(tiles[tile]['dangerous'])),
+                    'gettable': bool(int(tiles[tile]['gettable'])),
+                    'portal': bool(int(tiles[tile]['portal'])),
+                    'usable': bool(int(tiles[tile]['usable'])),
+                    'changeable': bool(int(tiles[tile]['changeable'])),
+                    'ui': bool(int(tiles[tile]['ui'])),
+                    'permeable': bool(int(tiles[tile]['permeable'])),
                     'dt': datetime.now()
                 }
                 print(f'to insert: {to_insert}')
                 # db.insert_tile_tag(tiles[tile]['tile_id'], tagger, tiles[tile]['solid'], tiles[tile]['movable'],
                 #                    tiles[tile]['destroyable'], tiles[tile]['dangerous'], tiles[tile]['gettable'], tiles[tile]['portal'], tiles[tile]['usable'], tiles[tile]['changeable'], tiles[tile]['ui'])
                 insert_count += 1
-                db.insert_tile_tag(to_insert)
+                self.db.insert_tile_tag(to_insert)
             else:
                 skip_count += 1
 
-        logger.debug('INSERTED {} Tile Tags. SKIPPED {} Tiles. SUBMITTED: {}'.format(
+        print('INSERTED {} Tile Tags. SKIPPED {} Tiles. SUBMITTED: {}'.format(
             insert_count, skip_count, len(tiles)))
 
         tag_images = data['tag_images']
@@ -253,28 +262,29 @@ class VGAC_DBAPI(object):
             b64_channel = tag_images[affordance]
             print(b64_channel)
             print('unbase 64', type(b64_channel))
+            b64_channel = b64_channel[22:]
             tag_data_bytes = base64.b64decode(b64_channel)
             # affordance_num = P.AFFORDANCES.index(affordance)
-            logger.debug('DB INSERT IMAGE TAGS for afford: {}, data type: {}'.format(
+            print('DB INSERT IMAGE TAGS for afford: {}, data type: {}'.format(
                 affordance, type(tag_data_bytes)))
 
             to_insert = {
                 'image_id': image_id,
                 'affordance': affordance,
-                'tagger': tagger,
+                'tagger_id': tagger_id,
                 'data': tag_data_bytes,
                 'dt': datetime.now(),
             }
             print(f'to insert: {to_insert}')
-            db.insert_screenshot_tag(to_insert)
+            self.db.insert_screenshot_tag(to_insert)
             # db.insert_screenshot_tag(image_id, affordance_num, tagger, to_insert)
-        logger.debug(f'num affordance channels: {len(tag_images)}')
+        print(f'num affordance channels: {len(tag_images)}')
 
         return json.dumps(dict(the_data=data), indent=4)
-        d = self.db.insert(first_name, last_name, age)
-        d.addCallback(self.onSuccess, request, 'Insert success')
-        d.addErrback(self.onFail, request, 'Insert failed')
-        return d
+        # d = self.db.insert(first_name, last_name, age)
+        # d.addCallback(self.onSuccess, request, 'Insert success')
+        # d.addErrback(self.onFail, request, 'Insert failed')
+        # return d
 
     @app.route('/screenshot', methods=['GET'])
     def randScreenshot(self, request):

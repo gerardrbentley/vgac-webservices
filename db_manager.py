@@ -380,7 +380,7 @@ class DB_Manager(object):
                 # print((d))
 
                 # arrayform = np.frombuffer(d, dtype=np.uint8)
-                conv = np.asarray(Image.open(io.BytesIO(d)), dtype=np.uint8)
+                conv = np.asarray(Image.open(io.BytesIO(d)).convert("L"), dtype=np.uint8)
                 # print(type(conv))
                 label_to_convert.append(conv)
 

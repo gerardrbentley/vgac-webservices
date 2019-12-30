@@ -162,7 +162,8 @@ var canvas_portal = document.getElementById('myCanvas_portal')
 var canvas_usable = document.getElementById('myCanvas_usable')
 var canvas_changeable = document.getElementById('myCanvas_changeable')
 var canvas_ui = document.getElementById('myCanvas_ui')
-var canvas_list = [canvas_solid, canvas_movable, canvas_destroyable, canvas_dangerous, canvas_gettable, canvas_portal, canvas_usable, canvas_changeable, canvas_ui];
+var canvas_permeable = document.getElementById('myCanvas_permeable')
+var canvas_list = [canvas_solid, canvas_movable, canvas_destroyable, canvas_dangerous, canvas_gettable, canvas_portal, canvas_usable, canvas_changeable, canvas_ui, canvas_permeable];
 //_________________________________________________________________
 /*
 ──────────────────────────────────────────────────────────────────────────────
@@ -249,6 +250,12 @@ checkC.addEventListener('change', function(e)
 {
     checkC.checked = !checkC.checked
     simulate(checkC, 67, "C");
+});
+var checkF = document.getElementById("cbF");
+checkF.addEventListener('change', function(e)
+{
+    checkF.checked = !checkF.checked
+    simulate(checkF, 70, "F");
 });
 
 //_____________________________________________________________________________________
@@ -357,6 +364,8 @@ var bX = document.getElementById("bX");
 bX.onclick = enlarge_aff;
 var bC = document.getElementById("bC");
 bC.onclick = enlarge_aff;
+var bF = document.getElementById("bF");
+bF.onclick = enlarge_aff;
 
 var b_reset = document.getElementById("b_reset");
 b_reset.style.backgroundColor = "red";
@@ -1046,7 +1055,8 @@ function fetch_data(){
               "portal":0,
               "usable":0,
               "changeable":0,
-              "ui":0
+              "ui":0,
+              "permeable":0,
           };
        }
        console.log(mydata)
@@ -1079,6 +1089,8 @@ function update_images(){
     chang_img.src = mydata["output"]['image'];
     var ui_img = document.getElementById('ui');
     ui_img.src = mydata["output"]['image'];
+    var permeable_img = document.getElementById('permeable');
+    permeable_img.src = mydata["output"]['image'];
     var scrn_img = document.getElementById('screenshot_preview');
     scrn_img.src = mydata["output"]['image'];
     var tile_tmp = document.getElementById('tile');
@@ -1111,6 +1123,7 @@ function update_images(){
     checkZ.checked = false;
     checkX.checked = false;
     checkC.checked = false;
+    checkF.checked = false;
 }
 
 function send_output_to_server(){
@@ -1206,7 +1219,8 @@ function saveAffordanceImages(){
       "portal":canvas_portal.toDataURL(),
       "usable":canvas_usable.toDataURL(),
       "changeable":canvas_changeable.toDataURL(),
-      "ui":canvas_ui.toDataURL()
+      "ui":canvas_ui.toDataURL(),
+      "permeable":canvas_permeable.toDataURL(),
   }
   console.log('saved to output[tagimages]')
 }
@@ -1258,6 +1272,7 @@ document.onkeydown = function(event)
                 checkZ.checked = false;
                 checkX.checked = false;
                 checkC.checked = false;
+                checkF.checked = false;
                 //
                 saveAffordanceImages();
                 document.getElementById("curr_tiles").textContent=String(num) + "/" + String(Object.keys(mydata["output"]['tiles']).length) + " Tiles";
@@ -1353,6 +1368,10 @@ document.onkeydown = function(event)
             flip_affordance(checkC, canvas_ui)
         break;
 
+        case 70: // f
+            flip_affordance(checkF, canvas_permeable)
+        break;
+
         case 27: // ECS
             if(!is_big)
             {
@@ -1370,6 +1389,7 @@ document.onkeydown = function(event)
                     draw_b(pos_x, pos_y, canvas_portal, GRID_SIZE, GRID_SIZE);
                     draw_b(pos_x, pos_y, canvas_usable, GRID_SIZE, GRID_SIZE);
                     draw_b(pos_x, pos_y, canvas_changeable, GRID_SIZE, GRID_SIZE);
+                    draw_b(pos_x, pos_y, canvas_permeable, GRID_SIZE, GRID_SIZE);
                     out_tiles['tile_'+num]['solid'] = 0;
                     out_tiles['tile_'+num]['movable'] = 0;
                     out_tiles['tile_'+num]['destroyable'] = 0;
@@ -1379,6 +1399,7 @@ document.onkeydown = function(event)
                     out_tiles['tile_'+num]['usable'] = 0;
                     out_tiles['tile_'+num]['changeable'] = 0;
                     out_tiles['tile_'+num]['ui'] = 0;
+                    out_tiles['tile_'+num]['permeable'] = 0;
                     checkQ.checked = false;
                     checkW.checked = false;
                     checkE.checked = false;
@@ -1388,6 +1409,7 @@ document.onkeydown = function(event)
                     checkZ.checked = false;
                     checkX.checked = false;
                     checkC.checked = false;
+                    checkF.checked = false;
                 }
                 //save and load current state of affordances here
                 //var solid_img = document.getElementById('solid');
