@@ -1,0 +1,14 @@
+FROM python:3.7-slim
+
+WORKDIR /usr/src/app
+
+
+COPY requirements.dbapi.txt ./
+RUN pip install --no-cache-dir -r requirements.dbapi.txt
+
+COPY ./static ./static
+
+COPY vgac_db.py ./
+
+EXPOSE 5000
+CMD [ "python", "./vgac_db.py" ]

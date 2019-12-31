@@ -1,0 +1,47 @@
+version: '3.5'
+
+services:
+  reverse:
+    container_name: reverse
+    # restart: unless-stopped
+    hostname: reverse
+    image: nginx:stable-alpine
+    ports:
+      - "80:80"
+      # - "443:443"
+    volumes:
+      - ./dev_config:/etc/nginx/conf.d
+      - ./static:/static
+      # - ./dev_config:/etc/ssl/private
+  dbapi:
+    container_name: dbapi
+    hostname: dbapi
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile-dbapi
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+  db:
+    container_name: vgac-db
+    hostname: vgac-db
+    restart: unless-stopped
+    image: postgres:12-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
+    name: db-data
+
+networks:
+  default:
+    name: vgac-network

@@ -1,0 +1,15 @@
+version: '3.5'
+
+services:
+  expert:
+    container_name: expert
+    hostname: expert
+    restart: unless-stopped
+    build:
+      context: ../
+      dockerfile: ./expert/Dockerfile
+
+networks:
+  default:
+    external:
+      name: vgac-network
