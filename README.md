@@ -64,7 +64,7 @@ manage.ingest_tiles('gamename', 'games/gamename/tiles')
 
 for updating db_manager, it should be rebuilt (unless in image store CI)
 ```
-docker build -t db_manager -f Dockerfile-db-manager .
+docker build -t db_manager -f Dockerfile-db-manager ./db_manager
 ```
 
 
