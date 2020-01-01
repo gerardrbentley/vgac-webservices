@@ -202,13 +202,10 @@ class VGAC_DBAPI(object):
     app = Klein()
     db = VGAC_Database()
 
-    @app.route('/devstatic/', branch=True)
-    def static(self, request):
-        return File("./static")
 
     @app.route('/')
     def test(self, request):
-        return json.dumps({'message': 'Hello World'})
+        return json.dumps({'message': 'Hello From VGAC DBAPI'})
 
     #--------- Routes ---------#
     @app.route('/insert', methods=['POST'])
@@ -421,5 +418,5 @@ class VGAC_DBAPI(object):
 
 if __name__ == '__main__':
     webapp = VGAC_DBAPI()
-    print('Let Us Begin')
+    print('Begin DBAPI')
     webapp.app.run("0.0.0.0", 5000)
