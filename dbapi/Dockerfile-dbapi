@@ -1,9 +1,10 @@
-FROM python:3.7-slim
+FROM continuumio/miniconda3
 
 WORKDIR /usr/src/app
 
 
 COPY requirements.dbapi.txt ./
+RUN conda install -c conda-forge opencv
 RUN pip install --no-cache-dir -r requirements.dbapi.txt
 
 COPY vgac_db.py ./

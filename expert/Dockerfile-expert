@@ -1,10 +1,9 @@
-FROM continuumio/miniconda3
+FROM python:3.7-slim
 
 WORKDIR /usr/src/app
 
 COPY expert/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-RUN conda install -c conda-forge opencv
 
 COPY expert/expert_tagging.py ./
 
