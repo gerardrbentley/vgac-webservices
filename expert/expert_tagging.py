@@ -15,12 +15,23 @@ class ExpertTagger(object):
     app = Klein()
 
     def __init__(self):
+        self.deployment = str(os.getenv('TARGET', 'dev'))
         self.BASE_URL = str(os.getenv('HOST', 'http://dbapi:5000'))
+        #TODO: ACTUALLY POINT AT RIGHT DB
+        if self.deployment == 'staging':
+            print('from staging expert')
+            # self.BASE_URL = self.BASE_URL + '/staging'
+        else:
+            print('from live expert')
 
 
     @app.route("/test")
     def test(self, request):
-        return json.dumps({'message': 'expert test'})
+        return json.dumps({'message': f'expert test from {self.deployment}'})
+
+    @app.route("/")
+    def base(self, request):
+        return json.dumps({'message': f'expert base from {self.deployment}'})
 
     #--------- Routes ---------#
     @app.route("/get_image", methods=['GET'])

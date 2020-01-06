@@ -138,8 +138,16 @@ class VGAC_Database(object):
         pid = conn.get_backend_pid()
         print("New DB connection created (backend PID {})".format(pid))
 
+    deployment = str(os.getenv('TARGET', 'dev'))
+    if deployment == 'staging':
+        print('from staging dbapi')
+        postgres_host = 'vgac-db-staging'
+    else:
+        postgres_host = 'vgac-db'
+        print('from live dbapi')
+
     keys = {
-        'host': os.getenv('POSTGRES_HOST', 'vgac-db'),
+        'host': postgres_host,
         'port': os.getenv('POSTGRES_PORT', '5432'),
         'database': os.getenv('POSTGRES_DB', 'vgac-db'),
         'user': os.getenv('POSTGRES_USER', 'faim-lab'),
@@ -430,11 +438,22 @@ class VGAC_DBAPI(object):
 
     app = Klein()
     db = VGAC_Database()
-
+    deployment = str(os.getenv('TARGET', 'dev'))
+    if deployment == 'staging':
+        print('from staging dbapi')
+        postgres_host = 'vgac-db-staging'
+    else:
+        postgres_host = 'vgac-db'
+        print('from live dbapi')
 
     @app.route('/')
     def test(self, request):
-        return json.dumps({'message': 'Hello From VGAC DBAPI'})
+        return json.dumps({'message': f'{self.deployment}: Hello From VGAC DBAPI'})
+
+    @app.route('/test')
+    def base2(self, request):
+        return json.dumps({'message': f'{self.deployment}: dbapi test'})
+
 
     #--------- Routes ---------#
     @app.route('/insert', methods=['POST'])

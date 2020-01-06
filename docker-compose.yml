@@ -2,9 +2,9 @@ version: '3.5'
 
 services:
   reverse:
-    container_name: reverse
-    # restart: unless-stopped
+    restart: unless-stopped
     hostname: reverse
+    container_name: reverse
     image: nginx:1.17-alpine
     ports:
       - "80:80"
@@ -14,8 +14,8 @@ services:
       - ${STATIC_DIR}:/static:ro
       # ${CERTS_DIR}:/etc/ssl/private:ro
   dbapi:
-    container_name: dbapi
     hostname: dbapi
+    container_name: dbapi
     restart: unless-stopped
     image: ${DBAPI_IMAGE:-dbapi}
     environment:
@@ -24,9 +24,10 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST=${POSTGRES_HOST}
       - POSTGRES_PORT=${POSTGRES_PORT}
+      - TARGET=${TARGET:-production}
   db:
-    container_name: vgac-db
     hostname: vgac-db
+    container_name: vgac-db
     restart: unless-stopped
     image: postgres:12-alpine
     environment:
@@ -36,10 +37,12 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
   expert:
-    container_name: expert
     hostname: expert
+    container_name: expert
     restart: unless-stopped
     image: ${EXPERT_IMAGE:-expert}
+    environment:
+      - TARGET=${TARGET:-production}
 
 
 volumes:

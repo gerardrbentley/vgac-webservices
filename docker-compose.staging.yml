@@ -1,0 +1,48 @@
+version: '3.5'
+
+services:
+  dbapi-staging:
+    hostname: dbapi-staging
+    container_name: dbapi-staging
+    restart: unless-stopped
+    image: ${DBAPI_IMAGE:-dbapi}
+    networks:
+      - vgac-network
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - TARGET=${TARGET:-staging}
+  db-staging:
+    hostname: vgac-db-staging
+    container_name: vgac-db-staging
+    restart: unless-stopped
+    image: postgres:12-alpine
+    networks:
+      - vgac-network
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - db-data-staging:/var/lib/postgresql/data
+  expert-staging:
+    hostname: expert-staging
+    container_name: expert-staging
+    restart: unless-stopped
+    image: ${EXPERT_IMAGE:-expert}
+    networks:
+      - vgac-network
+    environment:
+      - TARGET=${TARGET:-staging}
+
+
+volumes:
+  db-data-staging:
+    name: db-data-staging
+
+networks:
+  vgac-network:
+    external: true
