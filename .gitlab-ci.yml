@@ -9,9 +9,11 @@ variables:
   EXPERT_IMAGE_TAG: $CI_REGISTRY_IMAGE/expert:$CI_COMMIT_REF_SLUG
 
 vgac_dbapi:
-  only:
-    changes:
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+      changes:
       - dbapi/**/*
+      when: always
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -23,9 +25,11 @@ vgac_dbapi:
   stage: build
 
 db_manager:
-  only:
-    changes:
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+      changes:
       - db_manager/**/*
+      when: always
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -37,9 +41,11 @@ db_manager:
   stage: build
 
 expert:
-  only:
-    changes:
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+      changes:
       - expert/**/*
+      when: always
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -52,8 +58,9 @@ expert:
 
 deploy-staging:
   stage: staging
-  only:
-    refs: ["master"]
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+      when: always
   image: bash
   environment:
     name: staging
@@ -89,11 +96,11 @@ deploy-staging:
 
 deploy-prod:
   stage: deploy
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "production"'
+      when: manual
   script:
     - echo "Deploy to production server"
   environment:
     name: production
     url: https://pom-itb-cs1.campus.pomona.edu
-  when: manual
-  only:
-  - production
