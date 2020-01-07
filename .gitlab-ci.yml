@@ -1,5 +1,6 @@
 stages:
   - build
+  - staging
   - deploy
 
 variables:
@@ -49,13 +50,13 @@ expert:
     - /kaniko/executor --context $CI_PROJECT_DIR/expert --dockerfile $CI_PROJECT_DIR/expert/Dockerfile-expert --destination $EXPERT_IMAGE_TAG
   stage: build
 
-deploy-cs1:
-  stage: deploy
+deploy-staging:
+  stage: staging
   only:
     refs: ["master"]
   image: bash
   environment:
-    name: cs1
+    name: staging
     url: https://pom-itb-cs1.campus.pomona.edu
   script: |
     apk update; apk add openssh-client
@@ -83,6 +84,7 @@ deploy-cs1:
        POSTGRES_URL=$POSTGRES_URL \
        POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
        POSTGRES_PORT=$POSTGRES_PORT \
+       TARGET=$TARGET \
        docker-compose up -d"
 
 deploy-prod:
