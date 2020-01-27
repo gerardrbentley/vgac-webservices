@@ -11,11 +11,9 @@ variables:
   EXPERT_IMAGE_TAG: $CI_REGISTRY_IMAGE/expert:$CI_COMMIT_REF_SLUG
 
 vgac_dbapi:
-  when: always
-  only:
-    refs: ["master"]
-    changes:
-      - dbapi/**/*
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: always
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -27,11 +25,9 @@ vgac_dbapi:
   stage: build
 
 db_manager:
-  when: always
-  only:
-    refs: ["master"]
-    changes:
-      - db_manager/**/*
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: always
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -43,11 +39,9 @@ db_manager:
   stage: build_manager
 
 expert:
-  when: always
-  only:
-    refs: ["master"]
-    changes:
-      - expert/**/*
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: always
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -60,9 +54,9 @@ expert:
 
 deploy-staging:
   stage: staging
-  only:
-    refs: ["master"]
-  when: on_success
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: always
   image: bash
   environment:
     name: staging
@@ -94,6 +88,8 @@ deploy-staging:
        POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
        POSTGRES_PORT=$POSTGRES_PORT \
        TARGET=$TARGET \
+       CONFIG_DIR=$CONFIG_DIR \
+       STATIC_DIR=$STATIC_DIR \
        docker-compose up -d"
 
 deploy-prod:
