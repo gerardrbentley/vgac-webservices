@@ -35,11 +35,11 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - db-data:/var/lib/postgresql/data
-  db-manager:
-    hostname: db-manager
-    container_name: db-manager
+  db_manager:
+    hostname: db_manager
+    container_name: db_manager
     restart: "no"
-    image: ${DB_MANAGER_IMAGE:-db-manager}
+    image: ${DB_MANAGER_IMAGE:-db_manager}
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
