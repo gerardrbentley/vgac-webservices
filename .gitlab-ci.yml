@@ -72,12 +72,12 @@ deploy-staging:
       -o UserKnownHostsFile=/dev/null \
       -o StrictHostKeyChecking=no  \
       docker-compose.yml \
-      faim@pom-itb-cs1.campus.pomona.edu:~/tagging/docker-compose.yml
+      faim@pom-itb-cs1.campus.pomona.edu:~/webservices/docker-compose.yml
     ssh faim@pom-itb-cs1.campus.pomona.edu \
       -o UserKnownHostsFile=/dev/null \
       -o StrictHostKeyChecking=no \
       -i $PRIVATE_KEY "
-     cd ~faim/tagging
+     cd ~faim/webservices
      echo 'Docker login'
      docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY || exit 1
      echo 'Pull images'
