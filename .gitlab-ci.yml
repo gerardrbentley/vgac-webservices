@@ -13,7 +13,10 @@ variables:
 vgac_dbapi:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
+      changes:
+      - dbapi/**/*
       when: always
+    - when: manual
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -27,7 +30,10 @@ vgac_dbapi:
 db_manager:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
+      changes:
+      - db_manager/**/*
       when: always
+    - when: manual
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -41,7 +47,10 @@ db_manager:
 expert:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
+      changes:
+      - expert/**/*
       when: always
+    - when: manual
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -57,6 +66,7 @@ deploy-staging:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
       when: always
+    - when: manual
   image: bash
   environment:
     name: staging
@@ -90,6 +100,9 @@ deploy-staging:
        TARGET=$TARGET \
        CONFIG_DIR=$CONFIG_DIR \
        STATIC_DIR=$STATIC_DIR \
+       DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
+       DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
+       EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
        docker-compose up -d"
 
 deploy-prod:
