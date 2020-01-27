@@ -1,11 +1,10 @@
 FROM python:3.7-slim
 
-WORKDIR /app
+WORKDIR /usr/src/app
 
-
-COPY requirements.db_manager.txt ./
+COPY ./requirements.db_manager.txt ./
 RUN pip install --no-cache-dir -r requirements.db_manager.txt
 
-COPY db_manager.py ./
+COPY ./db_manager.py ./
 
 CMD [ "python", "-i", "./db_manager.py"]
