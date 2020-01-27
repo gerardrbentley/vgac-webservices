@@ -23,6 +23,20 @@
 //DONE: 30/09/19: generate a json (object?) without pictures but same tile_num + solid = 0; movable = 1; etc... + no locations either + also nine black-white imahges when user is done also... image ID + tagger ID and ... upload(post) this whole file to URL/server
 
 
+
+const baseURL = window.location
+console.log(baseURL.href)
+const basePathArray = baseURL.pathname.split('/')
+console.log(basePathArray)
+console.log(basePathArray[1])
+var BASE_URL = ''
+if (basePathArray[1] === 'staging'){
+     console.log('staging site')
+     BASE_URL = '/staging'
+}
+else{
+     console.log('live site')
+}
 /*
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ─██████████████─██████████████─████████████████──────██████████████─██████████─██████─────────██████████████────
@@ -1025,7 +1039,7 @@ window.addEventListener('load', function()
 function fetch_data(){
   console.log(mydata)
   tagger_id = document.getElementById("tagger_id").getAttribute('tagger')
-  temp_url = "/expert/get_image?tagger=" + tagger_id
+  temp_url = BASE_URL + "/expert/get_image?tagger=" + tagger_id
   $.getJSON(temp_url, function(json)
   {
       mydata = json;
@@ -1129,9 +1143,9 @@ function update_images(){
 function send_output_to_server(){
     console.log('Space pressed submitting')
     console.log(output)
-
+    var tmp_url = BASE_URL + "/api/insert"
     $.ajax({
-      url: "/api/insert",
+      url: tmp_url,
       type: "post",
       data: JSON.stringify(output),
       contentType: "application/json",

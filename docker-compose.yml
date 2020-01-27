@@ -2,33 +2,31 @@ version: '3.5'
 
 services:
   reverse:
-    container_name: reverse
-    # restart: unless-stopped
-    hostname: reverse
-    image: nginx:stable-alpine
-    ports:
-      - "80:80"
-      # - "443:443"
-    volumes:
-      - ./dev_config:/etc/nginx/conf.d
-      - ./static:/static
-      # - ./dev_config:/etc/ssl/private
-  dbapi:
-    container_name: dbapi
-    hostname: dbapi
     restart: unless-stopped
-    build:
-      context: .
-      dockerfile: Dockerfile-dbapi
+    hostname: reverse
+    container_name: reverse
+    image: nginx:1.17-alpine
+    ports:
+      - ${PUB_PORT:-80}:${PUB_PORT:-80}
+      - "443:443"
+    volumes:
+      - ${CONFIG_DIR}:/etc/nginx/conf.d:z
+      - ${STATIC_DIR}:/static:z
+      # ${CERTS_DIR}:/etc/ssl/private:z
+  dbapi:
+    hostname: dbapi
+    container_name: dbapi
+    restart: unless-stopped
+    image: ${DBAPI_IMAGE:-dbapi}
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=${POSTGRES_HOST}
       - POSTGRES_PORT=${POSTGRES_PORT}
+      - TARGET=${TARGET:-production}
   db:
-    container_name: vgac-db
     hostname: vgac-db
+    container_name: vgac-db
     restart: unless-stopped
     image: postgres:12-alpine
     environment:
@@ -37,6 +35,14 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - db-data:/var/lib/postgresql/data
+  expert:
+    hostname: expert
+    container_name: expert
+    restart: unless-stopped
+    image: ${EXPERT_IMAGE:-expert}
+    environment:
+      - TARGET=${TARGET:-production}
+
 
 volumes:
   db-data:

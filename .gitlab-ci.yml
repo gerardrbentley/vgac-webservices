@@ -1,0 +1,106 @@
+stages:
+  - build
+  - staging
+  - deploy
+
+variables:
+  DBAPI_IMAGE_TAG: $CI_REGISTRY_IMAGE/dbapi:$CI_COMMIT_REF_SLUG
+  DB_MANAGER_IMAGE_TAG: $CI_REGISTRY_IMAGE/db_manager:$CI_COMMIT_REF_SLUG
+  EXPERT_IMAGE_TAG: $CI_REGISTRY_IMAGE/expert:$CI_COMMIT_REF_SLUG
+
+vgac_dbapi:
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+      changes:
+      - dbapi/**/*
+      when: always
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - cd dbapi
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
+    - /kaniko/executor --context $CI_PROJECT_DIR/vgac_dbapi --dockerfile $CI_PROJECT_DIR/dbapi/Dockerfile-dbapi --destination $DBAPI_IMAGE_TAG
+  stage: build
+
+db_manager:
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+      changes:
+      - db_manager/**/*
+      when: always
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - cd db_manager
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
+    - /kaniko/executor --context $CI_PROJECT_DIR/db_manager --dockerfile $CI_PROJECT_DIR/db_manager/Dockerfile-db-manager --destination $DB_MANAGER_IMAGE_TAG
+  stage: build
+
+expert:
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+      changes:
+      - expert/**/*
+      when: always
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - cd expert
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
+    - /kaniko/executor --context $CI_PROJECT_DIR/expert --dockerfile $CI_PROJECT_DIR/expert/Dockerfile-expert --destination $EXPERT_IMAGE_TAG
+  stage: build
+
+deploy-staging:
+  stage: staging
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+      when: always
+  image: bash
+  environment:
+    name: staging
+    url: https://pom-itb-cs1.campus.pomona.edu
+  script: |
+    apk update; apk add openssh-client
+    chmod 600 $PRIVATE_KEY
+    scp -i $PRIVATE_KEY \
+      -o UserKnownHostsFile=/dev/null \
+      -o StrictHostKeyChecking=no  \
+      docker-compose.yml \
+      faim@pom-itb-cs1.campus.pomona.edu:~/webservices/docker-compose.yml
+    ssh faim@pom-itb-cs1.campus.pomona.edu \
+      -o UserKnownHostsFile=/dev/null \
+      -o StrictHostKeyChecking=no \
+      -i $PRIVATE_KEY "
+     cd ~faim/webservices
+     echo 'Docker login'
+     docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY || exit 1
+     echo 'Pull images'
+     DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
+     DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
+     EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
+       docker-compose pull
+     echo 'Using docker-compose up'
+     POSTGRES_USER=$POSTGRES_USER \
+       POSTGRES_DB=$POSTGRES_DB \
+       POSTGRES_URL=$POSTGRES_URL \
+       POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
+       POSTGRES_PORT=$POSTGRES_PORT \
+       TARGET=$TARGET \
+       docker-compose up -d"
+
+deploy-prod:
+  stage: deploy
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "production"'
+      when: manual
+  script:
+    - echo "Deploy to production server"
+  environment:
+    name: production
+    url: https://pom-itb-cs1.campus.pomona.edu

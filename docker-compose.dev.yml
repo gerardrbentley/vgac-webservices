@@ -1,0 +1,22 @@
+version: '3.5'
+
+services:
+  reverse:
+    volumes:
+      - ./dev_config:/etc/nginx/conf.d:ro
+      - ./static:/static:ro
+      # - ./dev_config:/etc/ssl/private:ro
+    restart: "no"
+  dbapi:
+    build:
+      context: ./dbapi
+      dockerfile: Dockerfile-dbapi
+    image: ${DBAPI_IMAGE:-dbapi}
+    restart: "no"
+
+  expert:
+    build:
+      context: .
+      dockerfile: ./expert/Dockerfile-expert
+    image: ${EXPERT_IMAGE:-expert}
+    restart: "no"
