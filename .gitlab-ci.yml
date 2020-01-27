@@ -1,5 +1,7 @@
 stages:
   - build
+  - build_manager
+  - build_expert
   - staging
   - deploy
 
@@ -29,7 +31,7 @@ db_manager:
     - if: '$CI_COMMIT_BRANCH == "master"'
       changes:
       - db_manager/**/*
-      when: on_success
+      when: always
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -38,14 +40,14 @@ db_manager:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
     - /kaniko/executor --context $CI_PROJECT_DIR/db_manager --dockerfile $CI_PROJECT_DIR/db_manager/Dockerfile-db-manager --destination $DB_MANAGER_IMAGE_TAG
-  stage: build
+  stage: build_manager
 
 expert:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
       changes:
       - expert/**/*
-      when: on_success
+      when: always
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -54,7 +56,7 @@ expert:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
     - /kaniko/executor --context $CI_PROJECT_DIR/expert --dockerfile $CI_PROJECT_DIR/expert/Dockerfile-expert --destination $EXPERT_IMAGE_TAG
-  stage: build
+  stage: build_expert
 
 deploy-staging:
   stage: staging
