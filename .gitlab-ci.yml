@@ -10,7 +10,7 @@ variables:
 
 vgac_dbapi:
   rules:
-    - if: '$TARGET == "staging"'
+    - if: '$CI_COMMIT_BRANCH == "master"'
       changes:
       - dbapi/**/*
       when: always
@@ -26,10 +26,10 @@ vgac_dbapi:
 
 db_manager:
   rules:
-    - if: '$TARGET == "staging"'
+    - if: '$CI_COMMIT_BRANCH == "master"'
       changes:
       - db_manager/**/*
-      when: always
+      when: on_success
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -42,10 +42,10 @@ db_manager:
 
 expert:
   rules:
-    - if: '$TARGET == "staging"'
+    - if: '$CI_COMMIT_BRANCH == "master"'
       changes:
       - expert/**/*
-      when: always
+      when: on_success
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -59,8 +59,8 @@ expert:
 deploy-staging:
   stage: staging
   rules:
-    - if: '$TARGET == "staging"'
-      when: always
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: on_success
   image: bash
   environment:
     name: staging
@@ -97,7 +97,7 @@ deploy-staging:
 deploy-prod:
   stage: deploy
   rules:
-    - if: '$TARGET == "production"'
+    - if: '$CI_COMMIT_BRANCH == "production"'
       when: manual
   script:
     - echo "Deploy to production server"
