@@ -16,8 +16,6 @@ vgac_dbapi:
       changes:
       - dbapi/**/*
       when: always
-    - if: '$CI_COMMIT_BRANCH == "master"'
-      when: manual
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -34,8 +32,6 @@ db_manager:
       changes:
       - db_manager/**/*
       when: always
-    - if: '$CI_COMMIT_BRANCH == "master"'
-      when: manual
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -52,8 +48,6 @@ expert:
       changes:
       - expert/**/*
       when: always
-    - if: '$CI_COMMIT_BRANCH == "master"'
-      when: manual
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -81,6 +75,19 @@ deploy-staging:
       -o StrictHostKeyChecking=no  \
       docker-compose.yml \
       faim@pom-itb-cs1.campus.pomona.edu:~/webservices/docker-compose.yml
+    echo 'Docker-compose copied'
+    scp -r -i $PRIVATE_KEY \
+      -o UserKnownHostsFile=/dev/null \
+      -o StrictHostKeyChecking=no  \
+      ./static \
+      faim@pom-itb-cs1.campus.pomona.edu:/data/faim
+    echo 'Static files copied to /data/faim/static'
+    scp -r -i $PRIVATE_KEY \
+      -o UserKnownHostsFile=/dev/null \
+      -o StrictHostKeyChecking=no  \
+      ./nginx_config \
+      faim@pom-itb-cs1.campus.pomona.edu:/data/faim
+    echo 'Config files copied to /data/faim/nginx_config'
     ssh faim@pom-itb-cs1.campus.pomona.edu \
       -o UserKnownHostsFile=/dev/null \
       -o StrictHostKeyChecking=no \
