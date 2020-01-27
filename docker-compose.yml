@@ -38,7 +38,7 @@ services:
   db-manager:
     hostname: db-manager
     container_name: db-manager
-    restart: unless-stopped
+    restart: "no"
     image: ${DB_MANAGER_IMAGE:-dbapi}
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
