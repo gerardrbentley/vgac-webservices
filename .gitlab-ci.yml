@@ -16,7 +16,8 @@ vgac_dbapi:
       changes:
       - dbapi/**/*
       when: always
-    - when: manual
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: manual
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -33,7 +34,8 @@ db_manager:
       changes:
       - db_manager/**/*
       when: always
-    - when: manual
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: manual
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -50,7 +52,8 @@ expert:
       changes:
       - expert/**/*
       when: always
-    - when: manual
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: manual
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -66,7 +69,6 @@ deploy-staging:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
       when: always
-    - when: manual
   image: bash
   environment:
     name: staging
