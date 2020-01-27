@@ -39,7 +39,7 @@ services:
     hostname: db-manager
     container_name: db-manager
     restart: "no"
-    image: ${DB_MANAGER_IMAGE:-dbapi}
+    image: ${DB_MANAGER_IMAGE:-db-manager}
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
