@@ -11,11 +11,11 @@ variables:
   EXPERT_IMAGE_TAG: $CI_REGISTRY_IMAGE/expert:$CI_COMMIT_REF_SLUG
 
 vgac_dbapi:
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-      changes:
+  when: always
+  only:
+    refs: ["master"]
+    changes:
       - dbapi/**/*
-      when: always
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -27,11 +27,11 @@ vgac_dbapi:
   stage: build
 
 db_manager:
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-      changes:
+  when: always
+  only:
+    refs: ["master"]
+    changes:
       - db_manager/**/*
-      when: always
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -43,11 +43,11 @@ db_manager:
   stage: build_manager
 
 expert:
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-      changes:
+  when: always
+  only:
+    refs: ["master"]
+    changes:
       - expert/**/*
-      when: always
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -60,9 +60,9 @@ expert:
 
 deploy-staging:
   stage: staging
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-      when: on_success
+  only:
+    refs: ["master"]
+  when: on_success
   image: bash
   environment:
     name: staging
