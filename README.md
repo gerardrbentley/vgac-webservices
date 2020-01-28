@@ -64,6 +64,11 @@ for updating db_manager, it should be rebuilt (unless in image store CI). Gets r
 docker build -t db-manager -f Dockerfile-db-manager ./db_manager
 ```
 
+## CS1
+### Adding game data
+```
+scp -r -i ~/.ssh/PRIVATE_KEY ./games faim@pom-itb-cs1.campus.pomona.edu:/data/faim
+```
 
 ## Services
 
