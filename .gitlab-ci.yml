@@ -7,7 +7,7 @@ stages:
 
 variables:
   DBAPI_IMAGE_TAG: $CI_REGISTRY_IMAGE/dbapi:$CI_COMMIT_REF_SLUG
-  DB_MANAGER_IMAGE_TAG: $CI_REGISTRY_IMAGE/db_manager:$CI_COMMIT_REF_SLUG
+  DB_MANAGER_IMAGE_TAG: $CI_REGISTRY_IMAGE/db-manager:$CI_COMMIT_REF_SLUG
   EXPERT_IMAGE_TAG: $CI_REGISTRY_IMAGE/expert:$CI_COMMIT_REF_SLUG
 
 vgac_dbapi:
@@ -113,8 +113,8 @@ deploy-staging:
        DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
        EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
        docker-compose up -d
-    docker exec reverse nginx -s reload
-    echo 'NGINX reloaded and serving'"
+     docker exec reverse nginx -s reload
+     echo 'NGINX reloaded and serving'"
 
 deploy-prod:
   stage: deploy
