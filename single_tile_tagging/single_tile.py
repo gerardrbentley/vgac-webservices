@@ -29,9 +29,9 @@ class SingleTileTagger(object):
     def test(self, request):
         return json.dumps({'message': f'single tile test from {self.deployment}'})
 
-    @app.route("/testjs")
-    def testjs(self, request):
-        return File('./')
+    @app.route("/testhtml")
+    def testhtml(self, request):
+        return File('./single_tile_page.html')
 
     @app.route("/")
     def base(self, request):
@@ -66,11 +66,12 @@ class SingleTileTagger(object):
 
         print('Tiles id-d, LEN: {}'.format(len(tiles_to_tag)))
         num_tiles = len(tiles_to_tag)
-        tile_idx = random.randint(0,num_tiles-1)
+        tile_idx = random.choice(list(tiles_to_tag.keys()))
+        print(tiles_to_tag[tile_idx])
         tile_id = tiles_to_tag[tile_idx]['tile_id']
         print(f'test idx: {tile_idx}, test id: {tile_id}')
         while isinstance(tile_id, int):
-            tile_idx = random.randint(0,num_tiles-1)
+            tile_idx = random.choice(list(tiles_to_tag.keys()))
             tile_id = tiles_to_tag[tile_idx]['tile_id']
             print(f'bad id, test idx: {tile_idx}, test id: {tile_id}')
 
