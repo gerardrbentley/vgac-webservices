@@ -16,7 +16,16 @@ services:
 
   expert:
     build:
-      context: .
-      dockerfile: ./expert/Dockerfile-expert
+      context: ./expert
+      dockerfile: Dockerfile-expert
     image: ${EXPERT_IMAGE:-expert}
     restart: "no"
+  db-manager:
+    build:
+      context: ./db_manager
+      dockerfile: Dockerfile-db-manager
+    image: ${DB_MANAGER_IMAGE:-db-manager}
+    restart: "no"
+    volumes:
+      - ./testfolder/games:/app/games:z
+      - ./testfolder/out_data:/app/out_dataset:z

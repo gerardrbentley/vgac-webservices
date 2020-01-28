@@ -39,7 +39,7 @@ def affords_from_csv_file(file, file_name):
             csv_reader = csv.DictReader(tile_csv)
             out = []
             for row in csv_reader:
-                if row['file_name'] == file_name:
+                if row['tile_id'] == file_name:
                     out.append(row)
             return out
     return []
@@ -89,8 +89,8 @@ class DB_Manager(object):
     def __init__(self, **kwargs):
         keys = {'host': os.getenv('POSTGRES_HOST', 'vgac-db'),
             'port': os.getenv('POSTGRES_PORT', '5432'),
-            'dbname': os.getenv('POSTGRES_DB', 'vgac-db'),
-            'user': os.getenv('POSTGRES_USER', 'faim-lab'),
+            'dbname': os.getenv('POSTGRES_DB', 'affordances_db'),
+            'user': os.getenv('POSTGRES_USER', 'faim_lab'),
             'password': os.getenv('POSTGRES_PASSWORD', 'dev'),
             'cursor_factory': DictCursor
         }
@@ -98,7 +98,7 @@ class DB_Manager(object):
         self.connection = psycopg2.connect(**keys)
         # self.cursor = connection.cursor()
 
-    def ingest_filesystem_data(self, dir=os.path.join('games')):
+    def ingest_filesystem_data(self, dir=os.path.join('/app/games')):
         total_ingested = {}
         for game in list_games(dir):
             num_images, num_tags, num_skipped = self.ingest_screenshots(
@@ -313,7 +313,7 @@ class DB_Manager(object):
                     json.dump(meta, file)
 
             tiles = self.get_tiles_by_game(game)
-            print(f'Exporting {len(tiles)} screenshots for {game}')
+            print(f'Exporting {len(tiles)} tiles for {game}')
             tiles_folder = os.path.join(game_path, 'tiles')
             os.makedirs(tiles_folder, exist_ok=True)
             to_csv = []
