@@ -115,8 +115,6 @@ deploy-staging:
      DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
      EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
        docker-compose -f docker-compose.staging.yml pull
-     echo 'Creating docker network'
-     docker network create vgac-network
      echo 'Using docker-compose up'
      echo 'Deploying TARGET: $CI_ENVIRONMENT_SLUG'
      POSTGRES_USER=$POSTGRES_USER \
@@ -162,8 +160,6 @@ deploy-prod:
      DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
      EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
        docker-compose pull
-     echo 'Creating docker network'
-     docker network create vgac-network
      echo 'Using docker-compose up'
      echo 'Deploying TARGET: $CI_ENVIRONMENT_SLUG'
      POSTGRES_USER=$POSTGRES_USER \
