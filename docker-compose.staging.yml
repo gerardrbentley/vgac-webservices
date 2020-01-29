@@ -50,5 +50,5 @@ volumes:
     name: db-data-staging
 
 networks:
-  vgac-network:
-    external: true
+  default:
+    name: vgac-network
