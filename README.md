@@ -90,6 +90,9 @@ For more on docker run see [[https://docs.docker.com/engine/reference/run/][run]
 
 
 ### Database
+```
+docker exec -it vgac-db psql -U faim_lab -d affordances_db
+```
 
 Postgres Database can be spun up in its own docker container. For persistent storage, volume is mounted to host system. For easier connection to other docker containers and not revealing ports to world it is named and on the network. Otherwise started with base docker-compose.
 
