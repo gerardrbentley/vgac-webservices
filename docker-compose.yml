@@ -2,8 +2,7 @@ version: '3.5'
 
 services:
   reverse:
-    restart: unless-stopped
-    hostname: reverse
+    restart: unless-stopped 
     container_name: reverse
     image: nginx:1.17-alpine
     ports:
@@ -14,7 +13,6 @@ services:
       - ${STATIC_DIR}:/static:z
       # ${CERTS_DIR}:/etc/ssl/private:z
   dbapi:
-    hostname: dbapi
     container_name: dbapi
     restart: unless-stopped
     image: ${DBAPI_IMAGE:-dbapi}
@@ -25,7 +23,6 @@ services:
       - POSTGRES_PORT=${POSTGRES_PORT}
       - TARGET=${TARGET:-production}
   db:
-    hostname: vgac-db
     container_name: vgac-db
     restart: unless-stopped
     image: postgres:12-alpine
@@ -36,7 +33,6 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
   db-manager:
-    hostname: db-manager
     container_name: db-manager
     restart: "no"
     image: ${DB_MANAGER_IMAGE:-db-manager}
@@ -44,11 +40,11 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST:-vgac-db}
     volumes:
       - ${DATA_DIR:-/data/faim/games}:/app/games:z
       - ${OUT_DIR:-/data/faim/out_data}:/app/out_dataset:z 
   expert:
-    hostname: expert
     container_name: expert
     restart: unless-stopped
     image: ${EXPERT_IMAGE:-expert}
