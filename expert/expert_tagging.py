@@ -38,6 +38,7 @@ class ExpertTagger(object):
             self.BASE_URL = 'http://dbapi-staging:5000'
         self.log.info(f'Expert Tagger on {self.deployment} running, dbapi: {self.BASE_URL}')
 
+    #--------- Debug ----------#
     @app.route("/test")
     def test(self, request):
         return json.dumps({'message': f'expert test from {self.deployment}'})
@@ -56,22 +57,22 @@ class ExpertTagger(object):
             'tagger', ['default-tagger'])[0]
         if tagger_id == 'default-tagger':
             self.log.info("NO TAGGER ID IN GET IMAGE")
+        
+        self.log.info(f'Fetching for {tagger_id}: Expert Tagger on {self.deployment}, dbapi: {self.BASE_URL}')
 
-        self.log.info('Fetching image for tagger: {}'.format(tagger_id))
         try:
             image_data = yield treq.get(self.BASE_URL+'/screenshot', params={'tagger': tagger_id})
         except:
             return err_with_logger(self.log, f'Fetch at {self.BASE_URL}/screenshot failed')
         try:
             image_data = yield image_data.json()
+            self.log.info(f'image data type: {type(image_data)}')
+            image_data = image_data[0]
         except:
             return err_with_logger(self.log, f'Bad json from {self.BASE_URL}/screenshot')
 
         # image_data = fetch_json_with_logger(self.log, self.BASE_URL+'/screenshot', params={'tagger': tagger_id})
-        self.log.info(type(image_data))
-        image_data = image_data[0]
-        self.log.info(type(image_data))
-
+        self.log.info(f'image data type: {type(image_data)}')
         image_id = image_data['image_id']
 
         self.log.info(f'Fetching tiles for image: {image_id}')
