@@ -1,0 +1,31 @@
+version: '3.5'
+
+services:
+  reverse:
+    volumes:
+      - ./dev_config:/etc/nginx/conf.d:ro
+      - ./static:/static:ro
+      # - ./dev_config:/etc/ssl/private:ro
+    restart: "no"
+  dbapi:
+    build:
+      context: ./dbapi
+      dockerfile: Dockerfile-dbapi
+    image: ${DBAPI_IMAGE:-dbapi}
+    restart: "no"
+
+  expert:
+    build:
+      context: ./expert
+      dockerfile: Dockerfile-expert
+    image: ${EXPERT_IMAGE:-expert}
+    restart: "no"
+  db-manager:
+    build:
+      context: ./db_manager
+      dockerfile: Dockerfile-db-manager
+    image: ${DB_MANAGER_IMAGE:-db-manager}
+    restart: "no"
+    volumes:
+      - ./testfolder/games:/app/games:z
+      - ./testfolder/out_data:/app/out_dataset:z
