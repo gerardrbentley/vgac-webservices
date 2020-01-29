@@ -101,7 +101,7 @@ deploy-staging:
       -o UserKnownHostsFile=/dev/null \
       -o StrictHostKeyChecking=no  \
       docker-compose.staging.yml \
-      faim@pom-itb-cs1.campus.pomona.edu:~/webservices/docker-compose.yml
+      faim@pom-itb-cs1.campus.pomona.edu:~/webservices/docker-compose.staging.yml
     echo 'Docker-compose copied'
     ssh faim@pom-itb-cs1.campus.pomona.edu \
       -o UserKnownHostsFile=/dev/null \
@@ -114,7 +114,9 @@ deploy-staging:
      DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
      DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
      EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
-       docker-compose pull
+       docker-compose -f docker-compose.staging.yml pull
+     echo 'Creating docker network'
+     docker network create vgac-network
      echo 'Using docker-compose up'
      echo 'Deploying TARGET: $CI_ENVIRONMENT_SLUG'
      POSTGRES_USER=$POSTGRES_USER \
@@ -127,9 +129,8 @@ deploy-staging:
        DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
        DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
        EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
-       docker-compose up -d
-     docker exec reverse nginx -s reload
-     echo 'NGINX reloaded and serving'"
+       docker-compose -f docker-compose.staging.yml up -d
+     docker exec reverse nginx -s reload"
 
 deploy-prod:
   stage: deploy
@@ -161,6 +162,8 @@ deploy-prod:
      DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
      EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
        docker-compose pull
+     echo 'Creating docker network'
+     docker network create vgac-network
      echo 'Using docker-compose up'
      echo 'Deploying TARGET: $CI_ENVIRONMENT_SLUG'
      POSTGRES_USER=$POSTGRES_USER \
