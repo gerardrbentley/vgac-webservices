@@ -1,6 +1,7 @@
 from klein import Klein
 from twisted.web.static import File
 from twisted.internet.defer import inlineCallbacks
+from twisted.logger import Logger
 
 import treq
 
@@ -9,22 +10,25 @@ import os
 import base64
 import random
 
+def err_with_logger(the_logger, err_str):
+    the_logger.error(err_str)
+    return json.dumps({'output': {'status': 500, 'message': err_str}})
+
 def dict_decode(bytes_keys_values):
     return {k.decode('utf-8'):list(map(lambda x: x.decode('utf-8'), v)) for (k,v) in bytes_keys_values.items()}
 
 class SingleTileTagger(object):
     app = Klein()
+    log = Logger()
 
     def __init__(self):
         self.deployment = str(os.getenv('TARGET', 'dev'))
-        self.BASE_URL = str(os.getenv('HOST', 'http://dbapi:5000'))
-        #TODO: ACTUALLY POINT AT RIGHT DB
+        self.DATABASE_URL = 'http://dbapi:5000'
         if self.deployment == 'staging':
-            print('from staging expert')
-            # self.BASE_URL = self.BASE_URL + '/staging'
-        else:
-            print('from live expert')
+            self.DATABASE_URL = 'http://dbapi-staging:5000'
+        self.log.info(f'Expert Tagger on {self.deployment} running, dbapi: {self.DATABASE_URL}')
 
+    #--------- Debug ----------#
     @app.route("/test")
     def test(self, request):
         return json.dumps({'message': f'single tile test from {self.deployment}'})
@@ -32,6 +36,10 @@ class SingleTileTagger(object):
     @app.route("/testhtml")
     def testhtml(self, request):
         return File('./single_tile_page.html')
+
+    @app.route("/testjs")
+    def testhtml(self, request):
+        return File('./single_tile.js')
 
     @app.route("/")
     def base(self, request):
@@ -46,55 +54,63 @@ class SingleTileTagger(object):
         tagger_id = str_args.get(
             'tagger', ['default-tagger'])[0]
         if tagger_id == 'default-tagger':
-            print("NO TAGGER ID IN GET IMAGE")
+            self.log.info("NO TAGGER ID IN GET IMAGE")
 
-        print('Fetching image for tagger: {}'.format(tagger_id))
+        self.log.info(f'Fetching for {tagger_id}: Single Tile Tagger on {self.deployment}, dbapi: {self.DATABASE_URL}')
 
-        image_data = yield treq.get(self.BASE_URL+'/screenshot', params={'tagger': tagger_id})
-        image_data = yield image_data.json()
-        image_data = image_data[0]
-
+        try:
+            image_data = yield treq.get(self.DATABASE_URL+'/screenshot', params={'tagger': tagger_id})
+        except:
+            return err_with_logger(self.log, f'Fetch at {self.DATABASE_URL}/screenshot failed')
+        try:
+            image_data = yield image_data.json()
+            self.log.info(f'image data type: {type(image_data)}')
+            if isinstance(image_data, dict):
+                self.log.info(f'image data keys: {list(image_data.keys())}')
+            image_data = image_data[0]
+        except:
+            return err_with_logger(self.log, f'Bad json from {self.DATABASE_URL}/screenshot')
+        
+        self.log.info(f'image data type: {type(image_data)}')
+        if isinstance(image_data, dict):
+            self.log.info(f'image data keys: {list(image_data.keys())}')
+        
         image_id = image_data['image_id']
-        game = image_data['game']
-        image_string = image_data['data']
 
-        y_offset = image_data['y_offset']
-        x_offset = image_data['x_offset']
+        self.log.info(f'Fetching tiles for image: {image_id}')
+        try:
+            unique_tiles = yield treq.get(self.DATABASE_URL+'/screenshot_tiles/'+image_id)
+        except:
+            return err_with_logger(self.log, f'Fetch at {self.DATABASE_URL}/screenshot_tiles/{image_id} failed')
+        try:
+            tiles_to_tag = yield unique_tiles.json()
+        except:
+            return err_with_logger(self.log, f'Bad json from {self.DATABASE_URL}/screenshot_tiles/{image_id}')
 
-        unique_tiles = yield treq.get(self.BASE_URL+'/screenshot_tiles/'+image_id)
-        tiles_to_tag = yield unique_tiles.json()
+        self.log.info(f'tiles type: {type(tiles_to_tag)}')
+        if isinstance(tiles_to_tag, dict):
+            self.log.info(f'tiles keys: {list(tiles_to_tag.keys())}')
 
-        print('Tiles id-d, LEN: {}'.format(len(tiles_to_tag)))
-        num_tiles = len(tiles_to_tag)
-        tile_idx = random.choice(list(tiles_to_tag.keys()))
-        print(tiles_to_tag[tile_idx])
-        tile_id = tiles_to_tag[tile_idx]['tile_id']
-        print(f'test idx: {tile_idx}, test id: {tile_id}')
-        while isinstance(tile_id, int):
-            tile_idx = random.choice(list(tiles_to_tag.keys()))
-            tile_id = tiles_to_tag[tile_idx]['tile_id']
-            print(f'bad id, test idx: {tile_idx}, test id: {tile_id}')
+        self.log.info('Tiles in image, LEN: {}'.format(len(tiles_to_tag)))
+        choice_keys = list(tiles_to_tag.keys())
+        random.shuffle(choice_keys)
+
+        for tile_key in choice_keys:
+            tile_id = tiles_to_tag[tile_key]['tile_id']
+            if not isinstance(tile_id, int):
+                break
+            self.log.info(f'bad id, test idx: {tile_key}, test id: {tile_id}')
+
+        if isinstance(tile_id, int):
+            return err_with_logger(self.log, f'No tiles in db for image from {self.DATABASE_URL}/screenshot_tiles/{image_id}')
 
         output = {
-            'image': image_string,
+            'image': image_data['data'],
             'image_id': image_id,
-            'tile': tiles_to_tag[tile_idx],
+            'tile': tiles_to_tag[tile_key],
         }
-        print('send single tile with image')
+        self.log.info(f'Good Fetch: Single Tile Tagger on {self.deployment}, dbapi: {self.DATABASE_URL}')
         return json.dumps({'output': output})
-
-
-    #---------- Callbacks -----------#
-    def onSuccess(self, result, request, msg):
-        request.setResponseCode(201)
-        response = {'message': msg}
-        return json.dumps(response)
-
-    def onFail(self, failure, request, msg):
-        request.setResponseCode(417)
-        response = {'message': msg}
-        print(failure)
-        return json.dumps(response)
 
 if __name__ == '__main__':
     webapp = SingleTileTagger()

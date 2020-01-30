@@ -20,6 +20,13 @@ services:
       dockerfile: Dockerfile-expert
     image: ${EXPERT_IMAGE:-expert}
     restart: "no"
+
+  single-tile:
+    build:
+      context: ./single_tile_tagging
+      dockerfile: Dockerfile-single-tile
+    image: ${SINGLE_TILE_IMAGE:-single-tile}
+    restart: "no"
   db-manager:
     build:
       context: ./db_manager

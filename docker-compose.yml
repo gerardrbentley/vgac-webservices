@@ -50,6 +50,12 @@ services:
     image: ${EXPERT_IMAGE:-expert}
     environment:
       - TARGET=${TARGET:-production}
+  single-tile:
+    container_name: single-tile
+    restart: unless-stopped
+    image: ${SINGLE_TILE_IMAGE:-single-tile}
+    environment:
+      - TARGER=${TARGET:-production}
 
 
 volumes:
