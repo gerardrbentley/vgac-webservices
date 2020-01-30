@@ -43,7 +43,7 @@ services:
     restart: unless-stopped
     image: ${SINGLE_TILE_IMAGE:-single-tile:master}
     environment:
-      - TARGER=${TARGET:-production}
+      - TARGET=${TARGET:-production}
 
 volumes:
   db-data-staging:
