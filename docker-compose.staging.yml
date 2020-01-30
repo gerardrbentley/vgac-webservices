@@ -38,6 +38,12 @@ services:
     image: ${EXPERT_IMAGE:-expert:master}
     environment:
       - TARGET=${TARGET:-staging}
+  single-tile-staging:
+    container_name: single-tile-staging
+    restart: unless-stopped
+    image: ${SINGLE_TILE_IMAGE:-single-tile:master}
+    environment:
+      - TARGER=${TARGET:-production}
 
 volumes:
   db-data-staging:
