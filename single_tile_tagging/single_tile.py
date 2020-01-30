@@ -30,7 +30,7 @@ class SingleTileTagger(object):
 
     #--------- Debug ----------#
     @app.route("/test")
-    def test(self, request):
+    def test_route(self, request):
         return json.dumps({'message': f'single tile test from {self.deployment}'})
 
     @app.route("/testhtml")
@@ -38,7 +38,7 @@ class SingleTileTagger(object):
         return File('./single_tile_page.html')
 
     @app.route("/testjs")
-    def testhtml(self, request):
+    def testjs(self, request):
         return File('./single_tile.js')
 
     @app.route("/")
