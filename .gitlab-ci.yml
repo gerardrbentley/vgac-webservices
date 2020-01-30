@@ -1,7 +1,8 @@
 stages:
-  - build
+  - build_api
   - build_manager
   - build_expert
+  - update_nginx
   - staging
   - deploy
 
@@ -12,7 +13,7 @@ variables:
 
 vgac_dbapi:
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "production"'
       changes:
       - dbapi/**/*
       when: always
@@ -24,11 +25,11 @@ vgac_dbapi:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
     - /kaniko/executor --context $CI_PROJECT_DIR/dbapi --dockerfile $CI_PROJECT_DIR/dbapi/Dockerfile-dbapi --destination $DBAPI_IMAGE_TAG
-  stage: build
+  stage: build_api
 
 db_manager:
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "production"'
       changes:
       - db_manager/**/*
       when: always
@@ -44,7 +45,7 @@ db_manager:
 
 expert:
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "production"'
       changes:
       - expert/**/*
       when: always
@@ -57,6 +58,32 @@ expert:
     - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
     - /kaniko/executor --context $CI_PROJECT_DIR/expert --dockerfile $CI_PROJECT_DIR/expert/Dockerfile-expert --destination $EXPERT_IMAGE_TAG
   stage: build_expert
+
+net_update:
+  stage: update_nginx
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "production"'
+      changes:
+      - static/**/*
+      - nginx_config/**/*
+      when: always
+  image: bash
+  script: |
+    apk update; apk add openssh-client
+    chmod 600 $PRIVATE_KEY
+    scp -r -i $PRIVATE_KEY \
+      -o UserKnownHostsFile=/dev/null \
+      -o StrictHostKeyChecking=no  \
+      ./static \
+      faim@pom-itb-cs1.campus.pomona.edu:/data/faim
+    echo 'Static files copied to /data/faim/static'
+    scp -r -i $PRIVATE_KEY \
+      -o UserKnownHostsFile=/dev/null \
+      -o StrictHostKeyChecking=no  \
+      ./nginx_config \
+      faim@pom-itb-cs1.campus.pomona.edu:/data/faim
+    echo 'Config files copied to /data/faim/nginx_config'
+
 
 deploy-staging:
   stage: staging
@@ -73,21 +100,54 @@ deploy-staging:
     scp -i $PRIVATE_KEY \
       -o UserKnownHostsFile=/dev/null \
       -o StrictHostKeyChecking=no  \
+      docker-compose.staging.yml \
+      faim@pom-itb-cs1.campus.pomona.edu:~/webservices/docker-compose.staging.yml
+    echo 'Docker-compose copied'
+    ssh faim@pom-itb-cs1.campus.pomona.edu \
+      -o UserKnownHostsFile=/dev/null \
+      -o StrictHostKeyChecking=no \
+      -i $PRIVATE_KEY "
+     cd ~faim/webservices
+     echo 'Docker login'
+     docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY || exit 1
+     echo 'Pull images'
+     DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
+     DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
+     EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
+       docker-compose -f docker-compose.staging.yml pull
+     echo 'Using docker-compose up'
+     echo 'Deploying TARGET: $CI_ENVIRONMENT_SLUG'
+     POSTGRES_USER=$POSTGRES_USER \
+       POSTGRES_DB=$POSTGRES_DB \
+       POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
+       POSTGRES_PORT=$POSTGRES_PORT \
+       TARGET=$CI_ENVIRONMENT_SLUG \
+       CONFIG_DIR=$CONFIG_DIR \
+       STATIC_DIR=$STATIC_DIR \
+       DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
+       DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
+       EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
+       docker-compose -f docker-compose.staging.yml up -d
+     docker exec reverse nginx -s reload"
+
+deploy-prod:
+  stage: deploy
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "production"'
+      when: manual
+  environment:
+    name: production
+    url: https://pom-itb-cs1.campus.pomona.edu
+  image: bash
+  script: |
+    apk update; apk add openssh-client
+    chmod 600 $PRIVATE_KEY
+    scp -i $PRIVATE_KEY \
+      -o UserKnownHostsFile=/dev/null \
+      -o StrictHostKeyChecking=no  \
       docker-compose.yml \
       faim@pom-itb-cs1.campus.pomona.edu:~/webservices/docker-compose.yml
     echo 'Docker-compose copied'
-    scp -r -i $PRIVATE_KEY \
-      -o UserKnownHostsFile=/dev/null \
-      -o StrictHostKeyChecking=no  \
-      ./static \
-      faim@pom-itb-cs1.campus.pomona.edu:/data/faim
-    echo 'Static files copied to /data/faim/static'
-    scp -r -i $PRIVATE_KEY \
-      -o UserKnownHostsFile=/dev/null \
-      -o StrictHostKeyChecking=no  \
-      ./nginx_config \
-      faim@pom-itb-cs1.campus.pomona.edu:/data/faim
-    echo 'Config files copied to /data/faim/nginx_config'
     ssh faim@pom-itb-cs1.campus.pomona.edu \
       -o UserKnownHostsFile=/dev/null \
       -o StrictHostKeyChecking=no \
@@ -101,12 +161,12 @@ deploy-staging:
      EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
        docker-compose pull
      echo 'Using docker-compose up'
+     echo 'Deploying TARGET: $CI_ENVIRONMENT_SLUG'
      POSTGRES_USER=$POSTGRES_USER \
        POSTGRES_DB=$POSTGRES_DB \
-       POSTGRES_URL=$POSTGRES_URL \
        POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
        POSTGRES_PORT=$POSTGRES_PORT \
-       TARGET=$TARGET \
+       TARGET=$CI_ENVIRONMENT_SLUG \
        CONFIG_DIR=$CONFIG_DIR \
        STATIC_DIR=$STATIC_DIR \
        DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
@@ -115,14 +175,3 @@ deploy-staging:
        docker-compose up -d
      docker exec reverse nginx -s reload
      echo 'NGINX reloaded and serving'"
-
-deploy-prod:
-  stage: deploy
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "production"'
-      when: manual
-  script:
-    - echo "Deploy to production server"
-  environment:
-    name: production
-    url: https://pom-itb-cs1.campus.pomona.edu

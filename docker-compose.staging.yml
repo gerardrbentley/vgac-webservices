@@ -1,13 +1,21 @@
 version: '3.5'
 
 services:
+  reverse:
+      restart: unless-stopped 
+      container_name: reverse
+      image: nginx:1.17-alpine
+      ports:
+        - ${PUB_PORT:-80}:${PUB_PORT:-80}
+        - "443:443"
+      volumes:
+        - ${CONFIG_DIR}:/etc/nginx/conf.d:z
+        - ${STATIC_DIR}:/static:z
+        # ${CERTS_DIR}:/etc/ssl/private:z
   dbapi-staging:
-    hostname: dbapi-staging
     container_name: dbapi-staging
     restart: unless-stopped
-    image: ${DBAPI_IMAGE:-dbapi}
-    networks:
-      - vgac-network
+    image: ${DBAPI_IMAGE:-dbapi:master}
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -15,12 +23,9 @@ services:
       - POSTGRES_PORT=${POSTGRES_PORT}
       - TARGET=${TARGET:-staging}
   db-staging:
-    hostname: vgac-db-staging
     container_name: vgac-db-staging
     restart: unless-stopped
     image: postgres:12-alpine
-    networks:
-      - vgac-network
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -28,20 +33,16 @@ services:
     volumes:
       - db-data-staging:/var/lib/postgresql/data
   expert-staging:
-    hostname: expert-staging
     container_name: expert-staging
     restart: unless-stopped
-    image: ${EXPERT_IMAGE:-expert}
-    networks:
-      - vgac-network
+    image: ${EXPERT_IMAGE:-expert:master}
     environment:
       - TARGET=${TARGET:-staging}
-
 
 volumes:
   db-data-staging:
     name: db-data-staging
 
 networks:
-  vgac-network:
-    external: true
+  default:
+    name: vgac-network

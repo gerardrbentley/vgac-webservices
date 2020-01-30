@@ -34,6 +34,15 @@ After docker-compose up runs you should be able to navigate to http://localhost/
 ### DB Manager
 
 For interactively updating and bouncing database. Docker python image with one manager script. Expects .env file with database connection variables, also expects volume mounts as source / dest on host filesystem when run.
+The following POSTGRES variables are taken from an env file or defaulted to the second value
+```
+keys = {'host': os.getenv('POSTGRES_HOST', 'vgac-db'),
+            'port': os.getenv('POSTGRES_PORT', '5432'),
+            'dbname': os.getenv('POSTGRES_DB', 'affordances_db'),
+            'user': os.getenv('POSTGRES_USER', 'faim_lab'),
+            'password': os.getenv('POSTGRES_PASSWORD', 'dev'),
+    }
+```
 
 ```
 docker run -it --env-file .env --network=vgac-network -v "/USER/PATH/THIS_FOLDER/testfolder/games":/app/games:z -v "/USER/PATH/THIS_FOLDER/testfolder/out_data":/app/out_dataset:z db-manager
@@ -95,6 +104,9 @@ For more on docker run see [[https://docs.docker.com/engine/reference/run/][run]
 
 
 ### Database
+```
+docker exec -it vgac-db psql -U faim_lab -d affordances_db
+```
 
 Postgres Database can be spun up in its own docker container. For persistent storage, volume is mounted to host system. For easier connection to other docker containers and not revealing ports to world it is named and on the network. Otherwise started with base docker-compose.
 
