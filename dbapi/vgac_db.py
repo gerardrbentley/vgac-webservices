@@ -119,17 +119,17 @@ def unique_tiles_using_meta(image, y_offset=0, x_offset=0, width=256, height=224
     return img_tiles
 
 def logInsert(op):
-    print('logInsert')
+    # print('logInsert')
     if op:
         print(op)
-    else:
-        print("no operation done")
+    pass
+
 def logErr(op):
     print('logErr')
     if op:
         print(op)
     else:
-        print("no operation done, error")
+        print("no op on error")
 
 
 class VGAC_Database(object):
@@ -149,8 +149,8 @@ class VGAC_Database(object):
     keys = {
         'host': postgres_host,
         'port': os.getenv('POSTGRES_PORT', '5432'),
-        'database': os.getenv('POSTGRES_DB', 'vgac-db'),
-        'user': os.getenv('POSTGRES_USER', 'faim-lab'),
+        'database': os.getenv('POSTGRES_DB', 'affordances_db'),
+        'user': os.getenv('POSTGRES_USER', 'faim_lab'),
         'password': os.getenv('POSTGRES_PASSWORD', 'dev'),
     }
     print(keys)
@@ -163,16 +163,6 @@ class VGAC_Database(object):
                                     cp_good_sql = "SELECT 1",
                                     cursor_factory = DictCursor,
                                     **keys)
-    table = 'screenshots'
-    # dbpool.start()
-
-
-    def _insert(self, cursor, first, last, age):
-        insert_stmt = 'INSERT INTO %s (first_name, last_name, age) VALUES ("%s", "%s", %d)' % (self.table, first, last, age)
-        cursor.execute(insert_stmt)
-
-    def insert(self, first, last, age):
-        return self.dbpool.runInteraction(self._insert, first, last, age)
 
     def insert_screenshot_tag(self, kwargs):
         cmd = sql.SQL(
@@ -184,7 +174,7 @@ class VGAC_Database(object):
             """
         )
         self.dbpool.runOperation(cmd, kwargs).addCallbacks(logInsert, logErr)
-        print('Insert Screenshot tag Called and Ended')
+        # print('Insert Screenshot tag Called and Ended')
 
     def insert_tile(self, kwargs):
         cmd = sql.SQL(
@@ -194,7 +184,7 @@ class VGAC_Database(object):
             """
         )
         self.dbpool.runOperation(cmd, kwargs).addCallbacks(logInsert, logErr)
-        print('Insert Tile Called and Ended')
+        # print('Insert Tile Called and Ended')
 
     def insert_tile_tag(self, kwargs):
         cmd = sql.SQL(
@@ -207,10 +197,10 @@ class VGAC_Database(object):
         )
 
         self.dbpool.runOperation(cmd, kwargs).addCallbacks(logInsert, logErr)
-        print('Insert Tile Tag Called and Ended')
+        # print('Insert Tile Tag Called and Ended')
 
-    def queryAll(self):
-        select_stmt = sql.SQL("SELECT * FROM {}").format(sql.Identifier(self.table))
+    def queryAll(self, table):
+        select_stmt = sql.SQL("SELECT * FROM {}").format(sql.Identifier(table))
         return self.dbpool.runQuery(select_stmt)
 
     def get_random_screenshot(self):
@@ -343,10 +333,10 @@ class VGAC_Database(object):
                 #         }
                 #     break
                 b64_tile = tile_info['data']
-                print(b64_tile)
-                print('.')
-                print(to_compare)
-                print('...')
+                # print(b64_tile)
+                # print('.')
+                # print(to_compare)
+                # print('...')
                 if b64_tile == to_compare:
                     is_in_db = True
                     hit_ctr += 1
@@ -463,18 +453,16 @@ class VGAC_DBAPI(object):
         tagger_id = data.get('tagger_id', [None])
         image_id = data.get('image_id', [None])
         print(f'RECEIVED TAGS FROM: {tagger_id} FOR IMAGE: {image_id}')
-        print(f'data: {data}')
+        # print(f'data: {data}')
         tiles = (data.get('tiles', [None]))
-        print(tiles)
+        # print(tiles)
 
         insert_count = 0
         skip_count = 0
+        first = True
         for tile in tiles:
             tile_id = tiles[tile]['tile_id']
             if not isinstance(tile_id, int):
-                print('DB INSERT TILE TAGS ID: {}'.format(
-                    tile_id))
-
                 to_insert = {
                     'tile_id': tile_id,
                     'tagger_id': tagger_id,
@@ -490,7 +478,11 @@ class VGAC_DBAPI(object):
                     'permeable': bool(int(tiles[tile]['permeable'])),
                     'dt': datetime.now()
                 }
-                print(f'to insert: {to_insert}')
+                if first:
+                    print('SAMPLE DB INSERT TILE TAGS ID: {}'.format(
+                        tile_id))
+                    print(f'to insert: {to_insert}')
+                    first = False
                 # db.insert_tile_tag(tiles[tile]['tile_id'], tagger, tiles[tile]['solid'], tiles[tile]['movable'],
                 #                    tiles[tile]['destroyable'], tiles[tile]['dangerous'], tiles[tile]['gettable'], tiles[tile]['portal'], tiles[tile]['usable'], tiles[tile]['changeable'], tiles[tile]['ui'])
                 insert_count += 1
@@ -503,27 +495,36 @@ class VGAC_DBAPI(object):
 
         tag_images = data['tag_images']
         affordance_count = 0
+        # first = True
+        count = 0
         for affordance in tag_images:
             b64_channel = tag_images[affordance]
-            print(b64_channel)
-            print('unbase 64', type(b64_channel))
-            b64_channel = b64_channel[22:]
-            tag_data_bytes = base64.b64decode(b64_channel)
-            # affordance_num = P.AFFORDANCES.index(affordance)
-            print('DB INSERT IMAGE TAGS for afford: {}, data type: {}'.format(
-                affordance, type(tag_data_bytes)))
+            # print(b64_channel)
+            # print('unbase 64', type(b64_channel))
+            data_tag = b64_channel[:22]
+            if data_tag == IMAGE_BASE[:22]:
+                b64_channel = b64_channel[22:]
+                tag_data_bytes = base64.b64decode(b64_channel)
+                # affordance_num = P.AFFORDANCES.index(affordance)
 
-            to_insert = {
-                'image_id': image_id,
-                'affordance': affordance,
-                'tagger_id': tagger_id,
-                'data': tag_data_bytes,
-                'dt': datetime.now(),
-            }
-            print(f'to insert: {to_insert}')
-            self.db.insert_screenshot_tag(to_insert)
+                # print('DB INSERT IMAGE TAGS for afford: {}, data type: {}'.format(
+                #     affordance, type(tag_data_bytes)))
+
+                to_insert = {
+                    'image_id': image_id,
+                    'affordance': affordance,
+                    'tagger_id': tagger_id,
+                    'data': tag_data_bytes,
+                    'dt': datetime.now(),
+                }
+                # print(f'to insert: {to_insert}')
+                self.db.insert_screenshot_tag(to_insert)
+                count += 1
+            else:
+                print(f'Wrong Data tag on {affordance} b64 prefix: {data_tag}')
+
             # db.insert_screenshot_tag(image_id, affordance_num, tagger, to_insert)
-        print(f'num affordance channels: {len(tag_images)}')
+        print(f'num affordance channels inserted: {count}')
 
         return json.dumps(dict(the_data=data), indent=4)
         # d = self.db.insert(first_name, last_name, age)
@@ -645,7 +646,7 @@ class VGAC_DBAPI(object):
                 # print('...')
                 if b64_tile == to_compare:
                     is_in_db = True
-                    print("TILE MATCHED")
+                    # print("TILE MATCHED")
 
                     hit_ctr += 1
                     # print("MATCHED {}".format(tile_info['tile_id']))
@@ -658,24 +659,24 @@ class VGAC_DBAPI(object):
                         }
                     break
             if not is_in_db:
-                print("TILE NOT MATCHED IN DB")
+                # print("TILE NOT MATCHED IN DB")
                 miss_ctr += 1
                 tiles_to_tag['tile_{}'.format(idx)] = {
                     'tile_id': -1,
                     'tile_data': to_compare,
                     'locations': screenshot_tile['locations']
                     }
-            print('end loop')
+            # print('end loop')
             # idx = 0
             # if idx == -1:
             #     print('NEW TILE FOUND')
             #     height, width, channels = screenshot_tile['tile_data'].shape
             #     tile_data = P.from_cv_to_bytes(screenshot_tile['tile_data'])
             #     db.insert_tile(game, width, height, tile_data)
-        print('done')
-        print('done 2')
+        # print('done')
+        # print('done 2')
         print(f'db tile hits: {hit_ctr}, misses: {miss_ctr}')
-        print('wtf')
+        # print('wtf')
         return tiles_to_tag
 
     @app.route('/tiles/<string:tile_id>', methods=['GET'])
