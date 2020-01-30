@@ -41,7 +41,7 @@ services:
   single-tile-staging:
     container_name: single-tile-staging
     restart: unless-stopped
-    image: ${SINGLE_TILE_IMAGE:-single-tile-staging}
+    image: ${SINGLE_TILE_IMAGE:-single-tile:master}
     environment:
       - TARGER=${TARGET:-production}
 
