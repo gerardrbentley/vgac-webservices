@@ -26,7 +26,7 @@ class SingleTileTagger(object):
         self.DATABASE_URL = 'http://dbapi:5000'
         if self.deployment == 'staging':
             self.DATABASE_URL = 'http://dbapi-staging:5000'
-        self.log.info(f'Expert Tagger on {self.deployment} running, dbapi: {self.DATABASE_URL}')
+        self.log.info(f'Single Tile Tagger on {self.deployment} running, dbapi: {self.DATABASE_URL}')
 
     #--------- Debug ----------#
     @app.route("/test")
