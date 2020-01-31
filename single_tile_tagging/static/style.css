@@ -1,0 +1,70 @@
+
+#title h1 {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 30pt;
+    text-align: center;
+}
+
+.grid {
+    display: grid;
+    height: 712px;
+    width: 888px;
+    grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+    grid-gap: 20px;
+}
+
+.grid img:hover{
+    opacity: 0.3;
+}
+
+.container {
+    position: absolute;
+    left: 1000px;
+    top: 100px;
+    width: 256px;
+    height: 224px;
+}
+
+.container img{
+    width: 100%;
+    height: 100%;
+
+}
+
+.img:hover {
+    opacity: 0.1;
+    transform: scale(1.2);
+}
+.container .myCanvas {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+#tagging img{
+    position: absolute;
+    left: 1200px;
+    top: 125px;
+}
+
+#gridActions img{
+    position: absolute;
+    left: 900px;
+    top: 350px;
+}
+
+#instructions {
+    position: absolute;
+    left: 900px;
+    top: 400px;
+}
+
+#reset
+{
+    position: absolute;
+    left: 900px;
+    top:500px;
+}
+
+
+  
