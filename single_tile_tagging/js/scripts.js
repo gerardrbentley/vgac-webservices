@@ -70,17 +70,22 @@ b_permeable.style.fontSize = "x-large";
 b_permeable.style.fontVariant = "small-caps";
 
 var b_save = document.getElementById("b_save");
-b_save.style.backgroundColor = "green";
+b_save.style.backgroundColor = "rgb(3,78,29);";
 b_save.style.fontSize = "x-large";
 b_save.style.fontVariant = "small-caps";
 
 var b_comment = document.getElementById("b_comment");
-b_comment.style.backgroundColor = "grey";
+b_comment.style.backgroundColor = "rgb(6,100,105)";
 b_comment.style.fontSize = "x-large";
 b_comment.style.fontVariant = "small-caps";
 
+var b_context = document.getElementById("b_context");
+b_context.style.backgroundColor = "rgb(131,58,180)";
+b_context.style.fontSize = "x-large";
+b_context.style.fontVariant = "small-caps";
+
 var b_reset = document.getElementById("b_reset");
-b_reset.style.backgroundColor = "red";
+b_reset.style.backgroundColor = "rgb(190,11,11)";
 b_reset.style.fontSize = "x-large";
 b_reset.style.fontVariant = "small-caps";
 
