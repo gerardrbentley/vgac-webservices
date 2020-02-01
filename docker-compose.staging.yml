@@ -16,8 +16,6 @@ services:
     container_name: dbapi-staging
     restart: unless-stopped
     image: ${DBAPI_IMAGE:-dbapi:master}
-    networks:
-      - vgac-network
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -28,8 +26,6 @@ services:
     container_name: vgac-db-staging
     restart: unless-stopped
     image: postgres:12-alpine
-    networks:
-      - vgac-network
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -40,15 +36,19 @@ services:
     container_name: expert-staging
     restart: unless-stopped
     image: ${EXPERT_IMAGE:-expert:master}
-    networks:
-      - vgac-network
     environment:
       - TARGET=${TARGET:-staging}
+  single-tile-staging:
+    container_name: single-tile-staging
+    restart: unless-stopped
+    image: ${SINGLE_TILE_IMAGE:-single-tile:master}
+    environment:
+      - TARGET=${TARGET:-production}
 
 volumes:
   db-data-staging:
     name: db-data-staging
 
 networks:
-  vgac-network:
-    external: true
+  default:
+    name: vgac-network
