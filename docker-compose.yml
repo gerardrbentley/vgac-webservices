@@ -1,17 +1,17 @@
 version: '3.5'
 
 services:
-  reverse:
+  reverse-proxy:
     restart: unless-stopped 
-    container_name: reverse
-    image: nginx:1.17-alpine
+    container_name: reverse-proxy
+    image: ${REVERSE_PROXY_IMAGE:-reverse-proxy}
     ports:
       - ${PUB_PORT:-80}:${PUB_PORT:-80}
       - "443:443"
-    volumes:
-      - ${CONFIG_DIR}:/etc/nginx/conf.d:z
-      - ${STATIC_DIR}:/static:z
-      # ${CERTS_DIR}:/etc/ssl/private:z
+    # volumes:
+    #   - ${CONFIG_DIR}:/etc/nginx/conf.d:z
+    #   - ${STATIC_DIR}:/static:z
+    #   # ${CERTS_DIR}:/etc/ssl/private:z
   dbapi:
     container_name: dbapi
     restart: unless-stopped

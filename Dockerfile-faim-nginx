@@ -1,0 +1,24 @@
+# Source: Nginx Dockerfile 
+# https://github.com/nginxinc/docker-nginx/blob/5971de30c487356d5d2a2e1a79e02b2612f9a72f/mainline/alpine/Dockerfile
+# Modified by Gerard
+FROM nginx:1.17-alpine
+
+# Define mountable directories.
+# VOLUME ["/etc/nginx/sites-enabled", "/etc/nginx/certs", "/etc/nginx/conf.d", "/var/log/nginx", "/var/www/html"]
+
+# Define working directory.
+WORKDIR /etc/nginx
+
+# Add Config files
+COPY ./nginx_config/*.conf /etc/nginx/conf.d/
+# Add Static files
+COPY ./static /static/
+
+# TODO Add Cert Files
+
+# Define default command.
+CMD ["nginx", "-g", "daemon off;"]
+
+# Expose ports.
+EXPOSE 80
+EXPOSE 443

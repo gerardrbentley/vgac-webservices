@@ -1,5 +1,6 @@
 stages:
   - build_api
+  - build_proxy
   - build_manager
   - build_expert
   - build_single
@@ -9,9 +10,28 @@ stages:
 
 variables:
   DBAPI_IMAGE_TAG: $CI_REGISTRY_IMAGE/dbapi:$CI_COMMIT_REF_SLUG
+  REVERSE_PROXY_IMAGE_TAG: $CI_REGISTRY_IMAGE/reverse-proxy:$CI_COMMIT_REF_SLUG
   DB_MANAGER_IMAGE_TAG: $CI_REGISTRY_IMAGE/db-manager:$CI_COMMIT_REF_SLUG
   EXPERT_IMAGE_TAG: $CI_REGISTRY_IMAGE/expert:$CI_COMMIT_REF_SLUG
   SINGLE_TILE_IMAGE_TAG: $CI_REGISTRY_IMAGE/single-tile:$CI_COMMIT_REF_SLUG
+
+reverse_proxy:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "production"'
+      changes:
+      - nginx_config/**/*
+      - Dockerfile-faim-nginx
+      - static/**/*
+      when: always
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - pwd
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile-faim-nginx --destination $REVERSE_PROXY_IMAGE_TAG
+  stage: build_proxy
 
 vgac_dbapi:
   rules:
