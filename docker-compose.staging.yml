@@ -5,9 +5,9 @@ services:
     restart: unless-stopped 
     container_name: reverse-proxy-staging
     image: ${REVERSE_PROXY_IMAGE:-reverse-proxy:master}
-    ports:
-      - ${PUB_PORT:-80}:${PUB_PORT:-80}
-      - "443:443"
+    # ports:
+    #   - ${PUB_PORT:-80}:${PUB_PORT:-80}
+    #   - "443:443"
     # volumes:
     #   - ${CONFIG_DIR}:/etc/nginx/conf.d:z
     #   - ${STATIC_DIR}:/staging:z
