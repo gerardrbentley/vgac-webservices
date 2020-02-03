@@ -32,18 +32,18 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - db-data:/var/lib/postgresql/data
-  db-manager:
-    container_name: db-manager
-    restart: "no"
-    image: ${DB_MANAGER_IMAGE:-db-manager}
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=${POSTGRES_HOST:-vgac-db}
-    volumes:
-      - ${DATA_DIR:-/data/faim/games}:/app/games:z
-      - ${OUT_DIR:-/data/faim/out_data}:/app/out_dataset:z 
+  # db-manager:
+  #   container_name: db-manager
+  #   restart: "no"
+  #   image: ${DB_MANAGER_IMAGE:-db-manager}
+  #   environment:
+  #     - POSTGRES_USER=${POSTGRES_USER}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+  #     - POSTGRES_DB=${POSTGRES_DB}
+  #     - POSTGRES_HOST=${POSTGRES_HOST:-vgac-db}
+  #   volumes:
+  #     - ${DATA_DIR:-/data/faim/games}:/app/games:z
+  #     - ${OUT_DIR:-/data/faim/out_data}:/app/out_dataset:z 
   expert:
     container_name: expert
     restart: unless-stopped
