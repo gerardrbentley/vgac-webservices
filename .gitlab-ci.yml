@@ -1,17 +1,37 @@
 stages:
+  - build_proxy
   - build_api
   - build_manager
   - build_expert
   - build_single
-  - update_nginx
+  # - update_nginx
   - staging
   - deploy
 
 variables:
   DBAPI_IMAGE_TAG: $CI_REGISTRY_IMAGE/dbapi:$CI_COMMIT_REF_SLUG
+  REVERSE_PROXY_IMAGE_TAG: $CI_REGISTRY_IMAGE/reverse-proxy:$CI_COMMIT_REF_SLUG
   DB_MANAGER_IMAGE_TAG: $CI_REGISTRY_IMAGE/db-manager:$CI_COMMIT_REF_SLUG
   EXPERT_IMAGE_TAG: $CI_REGISTRY_IMAGE/expert:$CI_COMMIT_REF_SLUG
   SINGLE_TILE_IMAGE_TAG: $CI_REGISTRY_IMAGE/single-tile:$CI_COMMIT_REF_SLUG
+
+reverse_proxy:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "production"'
+      changes:
+      - nginx_config/**/*
+      - Dockerfile-faim-nginx
+      - static/**/*
+      when: always
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - pwd
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile-faim-nginx --destination $REVERSE_PROXY_IMAGE_TAG
+  stage: build_proxy
 
 vgac_dbapi:
   rules:
@@ -77,30 +97,31 @@ single:
     - /kaniko/executor --context $CI_PROJECT_DIR/single_tile_tagging --dockerfile $CI_PROJECT_DIR/single_tile_tagging/Dockerfile-single-tile --destination $SINGLE_TILE_IMAGE_TAG
   stage: build_single
 
-net_update:
-  stage: update_nginx
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "production"'
-      changes:
-      - static/**/*
-      - nginx_config/**/*
-      when: always
-  image: bash
-  script: |
-    apk update; apk add openssh-client
-    chmod 600 $PRIVATE_KEY
-    scp -r -i $PRIVATE_KEY \
-      -o UserKnownHostsFile=/dev/null \
-      -o StrictHostKeyChecking=no  \
-      ./static \
-      faim@pom-itb-cs1.campus.pomona.edu:/data/faim
-    echo 'Static files copied to /data/faim/static'
-    scp -r -i $PRIVATE_KEY \
-      -o UserKnownHostsFile=/dev/null \
-      -o StrictHostKeyChecking=no  \
-      ./nginx_config \
-      faim@pom-itb-cs1.campus.pomona.edu:/data/faim
-    echo 'Config files copied to /data/faim/nginx_config'
+# net_update:
+#   stage: update_nginx
+#   rules:
+#     - if: '$CI_COMMIT_BRANCH == "production"'
+#       changes:
+#       - static/**/*
+#       - nginx_config/**/*
+#       - Dockerfile-faim-nginx
+#       when: always
+#   image: bash
+#   script: |
+#     apk update; apk add openssh-client
+#     chmod 600 $PRIVATE_KEY
+#     scp -r -i $PRIVATE_KEY \
+#       -o UserKnownHostsFile=/dev/null \
+#       -o StrictHostKeyChecking=no  \
+#       ./static \
+#       faim@pom-itb-cs1.campus.pomona.edu:/data/faim
+#     echo 'Static files copied to /data/faim/static'
+#     scp -r -i $PRIVATE_KEY \
+#       -o UserKnownHostsFile=/dev/null \
+#       -o StrictHostKeyChecking=no  \
+#       ./nginx_config \
+#       faim@pom-itb-cs1.campus.pomona.edu:/data/faim
+#     echo 'Config files copied to /data/faim/nginx_config'
 
 
 deploy-staging:
@@ -130,9 +151,11 @@ deploy-staging:
      docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY || exit 1
      echo 'Pull images'
      DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
-     DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
+     REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
      EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
        docker-compose -f docker-compose.staging.yml pull
+     echo 'Pull db manager (not in compose)'
+     docker pull $DB_MANAGER_IMAGE_TAG
      echo 'Using docker-compose up'
      echo 'Deploying TARGET: $CI_ENVIRONMENT_SLUG'
      POSTGRES_USER=$POSTGRES_USER \
@@ -143,6 +166,7 @@ deploy-staging:
        CONFIG_DIR=$CONFIG_DIR \
        STATIC_DIR=$STATIC_DIR \
        DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
+       REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
        DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
        EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
        SINGLE_TILE_IMAGE=$SINGLE_TILE_IMAGE_TAG \
@@ -176,9 +200,12 @@ deploy-prod:
      docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY || exit 1
      echo 'Pull images'
      DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
+     REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
      DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
      EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
        docker-compose pull
+     echo 'Pull db manager (not in compose)'
+     docker pull $DB_MANAGER_IMAGE_TAG
      echo 'Using docker-compose up'
      echo 'Deploying TARGET: $CI_ENVIRONMENT_SLUG'
      POSTGRES_USER=$POSTGRES_USER \
@@ -189,9 +216,9 @@ deploy-prod:
        CONFIG_DIR=$CONFIG_DIR \
        STATIC_DIR=$STATIC_DIR \
        DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
+       REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
        DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
        EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
        SINGLE_TILE_IMAGE=$SINGLE_TILE_IMAGE_TAG \
        docker-compose up -d
-     docker exec reverse nginx -s reload
-     echo 'NGINX reloaded, production serving'"
+     echo 'production serving'"
