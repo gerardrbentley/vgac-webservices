@@ -7,12 +7,17 @@ from klein import Klein
 from twisted.web.static import File
 from twisted.enterprise import adbapi
 from twisted.internet.defer import inlineCallbacks, ensureDeferred
+from twisted.logger import Logger
 
 from psycopg2.extras import DictCursor
 from psycopg2 import sql
 
 import numpy as np
 import cv2
+
+def err_with_logger(the_logger, err_str):
+    the_logger.error(err_str)
+    return json.dumps({'output': {'status': 500, 'message': err_str}})
 
 def dict_decode(bytes_keys_values):
     return {k.decode('utf-8'):list(map(lambda x: x.decode('utf-8'), v)) for (k,v) in bytes_keys_values.items()}
@@ -425,17 +430,18 @@ class VGAC_Database(object):
 
 
 class VGAC_DBAPI(object):
-
     app = Klein()
     db = VGAC_Database()
-    deployment = str(os.getenv('TARGET', 'dev'))
-    if deployment == 'staging':
-        print('from staging dbapi')
-        postgres_host = 'vgac-db-staging'
-    else:
-        postgres_host = 'vgac-db'
-        print('from live dbapi')
+    log = Logger()
 
+    def __init__(self):
+        self.deployment = str(os.getenv('TARGET', 'dev'))
+        self.POSTGRES_HOST = 'vgac-db'
+        if self.deployment == 'staging':
+            self.POSTGRES_HOST = 'vgac-db-staging'
+        self.log.info(f'DB API on {self.deployment} running, database connection: {self.POSTGRES_HOST}')
+
+    #--------- Debug ----------#
     @app.route('/')
     def test(self, request):
         return json.dumps({'message': f'{self.deployment}: Hello From VGAC DBAPI'})
@@ -444,93 +450,102 @@ class VGAC_DBAPI(object):
     def base2(self, request):
         return json.dumps({'message': f'{self.deployment}: dbapi test'})
 
+    #--------- Helpers ----------#
+    def tiles_to_db(self, tiles, tagger_id):
+        insert_count = 0
+        skip_count = 0
+        # first = True
+        for tile in tiles:
+            # Tiles not in DB have tile id -1
+            tile_id = tiles[tile].get('tile_id', -1)
+
+            if not isinstance(tile_id, int):
+                try:
+                    to_insert = {
+                        'tile_id': tile_id,
+                        'tagger_id': tagger_id,
+                        'solid': bool(int(tiles[tile]['solid'])),
+                        'movable': bool(int(tiles[tile]['movable'])),
+                        'destroyable': bool(int(tiles[tile]['destroyable'])),
+                        'dangerous': bool(int(tiles[tile]['dangerous'])),
+                        'gettable': bool(int(tiles[tile]['gettable'])),
+                        'portal': bool(int(tiles[tile]['portal'])),
+                        'usable': bool(int(tiles[tile]['usable'])),
+                        'changeable': bool(int(tiles[tile]['changeable'])),
+                        'ui': bool(int(tiles[tile]['ui'])),
+                        'permeable': bool(int(tiles[tile]['permeable'])),
+                        'dt': datetime.now()
+                    }
+                    # if first:
+                    #     self.log.info(f'SAMPLE DB INSERT TILE TAGS ID: {tile_id}')
+                    #     self.log.info(f'to insert: {to_insert}')
+                    #     first = False
+                    insert_count += 1
+                    self.db.insert_tile_tag(to_insert)
+                except:
+                    skip_count += 1
+                    err_with_logger(self.log, f'Bad JSON inserting Tile data for Tile {tile_id} from tagger {tagger_id}')
+            else:
+                skip_count += 1
+
+        self.log.info(f'Inserted {insert_count} Tile Tags. SKIPPED {skip_count} Tiles. SUBMITTED: {len(tiles)}')
+    
+    def screenshot_tags_to_db(self, tag_images, image_id, tagger_id):
+        affordance_count = 0
+        count = 0
+        for affordance in tag_images:
+            # self.log.info(f'affordance: {affordance}')
+            try:
+                b64_channel = tag_images[affordance]
+                # self.log.info(b64_channel)
+                data_tag = b64_channel[:22]
+                # self.log.info(data_tag)
+                if data_tag == IMAGE_BASE[:22]:
+                    b64_channel = b64_channel[22:]
+                    # self.log.info('got b64 chan')
+                    tag_data_bytes = base64.b64decode(b64_channel)
+                    # self.log.info('got decoded bytes')
+
+                    to_insert = {
+                        'image_id': image_id,
+                        'affordance': affordance,
+                        'tagger_id': tagger_id,
+                        'data': tag_data_bytes,
+                        'dt': datetime.now(),
+                    }
+                    # self.log.info(f'to insert: {to_insert}')
+
+                    self.db.insert_screenshot_tag(to_insert)
+                    count += 1
+                else:
+                    self.log.error(f'Wrong Data tag on {affordance} b64 prefix: {data_tag}')
+            except:
+                err_with_logger(self.log, f'Bad JSON inserting affordance tag data')
+        self.log.info(f'Num affordance channels inserted: {count}')
 
     #--------- Routes ---------#
     @app.route('/insert', methods=['POST'])
     def insert(self, request):
-        print(type(request.args))
-        data = json.loads(request.content.read())
-        tagger_id = data.get('tagger_id', [None])
-        image_id = data.get('image_id', [None])
-        print(f'RECEIVED TAGS FROM: {tagger_id} FOR IMAGE: {image_id}')
-        # print(f'data: {data}')
+        self.log.info(f'POST received type: {type(request.args)}')
+        try:
+            data = json.loads(request.content.read())
+        except:
+            return err_with_logger(self.log, f'Bad JSON from POST request')
+        
+        tagger_id = data.get('tagger_id', None)
+        image_id = data.get('image_id', None)
+        if tagger_id is None or image_id is None:
+            return err_with_logger(self.log, f'Bad tagger id or image id from POST request')
+        
+        self.log.info(f'RECEIVED TAGS FROM: {tagger_id} FOR IMAGE: {image_id}')
+        
         tiles = (data.get('tiles', [None]))
-        # print(tiles)
+        self.tiles_to_db(tiles, tagger_id)
 
-        insert_count = 0
-        skip_count = 0
-        first = True
-        for tile in tiles:
-            tile_id = tiles[tile]['tile_id']
-            if not isinstance(tile_id, int):
-                to_insert = {
-                    'tile_id': tile_id,
-                    'tagger_id': tagger_id,
-                    'solid': bool(int(tiles[tile]['solid'])),
-                    'movable': bool(int(tiles[tile]['movable'])),
-                    'destroyable': bool(int(tiles[tile]['destroyable'])),
-                    'dangerous': bool(int(tiles[tile]['dangerous'])),
-                    'gettable': bool(int(tiles[tile]['gettable'])),
-                    'portal': bool(int(tiles[tile]['portal'])),
-                    'usable': bool(int(tiles[tile]['usable'])),
-                    'changeable': bool(int(tiles[tile]['changeable'])),
-                    'ui': bool(int(tiles[tile]['ui'])),
-                    'permeable': bool(int(tiles[tile]['permeable'])),
-                    'dt': datetime.now()
-                }
-                if first:
-                    print('SAMPLE DB INSERT TILE TAGS ID: {}'.format(
-                        tile_id))
-                    print(f'to insert: {to_insert}')
-                    first = False
-                # db.insert_tile_tag(tiles[tile]['tile_id'], tagger, tiles[tile]['solid'], tiles[tile]['movable'],
-                #                    tiles[tile]['destroyable'], tiles[tile]['dangerous'], tiles[tile]['gettable'], tiles[tile]['portal'], tiles[tile]['usable'], tiles[tile]['changeable'], tiles[tile]['ui'])
-                insert_count += 1
-                self.db.insert_tile_tag(to_insert)
-            else:
-                skip_count += 1
-
-        print('INSERTED {} Tile Tags. SKIPPED {} Tiles. SUBMITTED: {}'.format(
-            insert_count, skip_count, len(tiles)))
-
-        tag_images = data['tag_images']
-        affordance_count = 0
-        # first = True
-        count = 0
-        for affordance in tag_images:
-            b64_channel = tag_images[affordance]
-            # print(b64_channel)
-            # print('unbase 64', type(b64_channel))
-            data_tag = b64_channel[:22]
-            if data_tag == IMAGE_BASE[:22]:
-                b64_channel = b64_channel[22:]
-                tag_data_bytes = base64.b64decode(b64_channel)
-                # affordance_num = P.AFFORDANCES.index(affordance)
-
-                # print('DB INSERT IMAGE TAGS for afford: {}, data type: {}'.format(
-                #     affordance, type(tag_data_bytes)))
-
-                to_insert = {
-                    'image_id': image_id,
-                    'affordance': affordance,
-                    'tagger_id': tagger_id,
-                    'data': tag_data_bytes,
-                    'dt': datetime.now(),
-                }
-                # print(f'to insert: {to_insert}')
-                self.db.insert_screenshot_tag(to_insert)
-                count += 1
-            else:
-                print(f'Wrong Data tag on {affordance} b64 prefix: {data_tag}')
-
-            # db.insert_screenshot_tag(image_id, affordance_num, tagger, to_insert)
-        print(f'num affordance channels inserted: {count}')
+        tag_images = data.get('tag_images', [None])
+        self.screenshot_tags_to_db(tag_images, image_id, tagger_id)
 
         return json.dumps(dict(the_data=data), indent=4)
-        # d = self.db.insert(first_name, last_name, age)
-        # d.addCallback(self.onSuccess, request, 'Insert success')
-        # d.addErrback(self.onFail, request, 'Insert failed')
-        # return d
 
     @app.route('/screenshot', methods=['GET'])
     def randScreenshot(self, request):
