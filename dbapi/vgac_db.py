@@ -435,7 +435,7 @@ class VGAC_DBAPI(object):
     log = Logger()
 
     def __init__(self):
-        self.deployment = str(os.getenv('TARGET', 'dev'))
+        self.deployment = str(os.getenv('TARGET', 'test'))
         self.POSTGRES_HOST = 'vgac-db'
         if self.deployment == 'staging':
             self.POSTGRES_HOST = 'vgac-db-staging'
@@ -447,7 +447,7 @@ class VGAC_DBAPI(object):
         return json.dumps({'message': f'{self.deployment}: Hello From VGAC DBAPI'})
 
     @app.route('/test')
-    def base2(self, request):
+    def message(self, request):
         return json.dumps({'message': f'{self.deployment}: dbapi test'})
 
     #--------- Helpers ----------#
