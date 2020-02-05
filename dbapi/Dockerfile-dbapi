@@ -7,6 +7,5 @@ RUN conda install -c conda-forge opencv
 RUN pip install --no-cache-dir -r requirements.dbapi.txt
 
 COPY ./vgac_db.py ./
-COPY ./api_documentation.html ./
 
 CMD [ "python", "./vgac_db.py" ]
