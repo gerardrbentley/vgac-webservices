@@ -21,6 +21,7 @@ import cv2
 
 AFFORDANCES = []
 NUM_AFFORDANCES = 10
+IMAGE_BASE = "data:image/png;base64,{}"
 
 def err_with_logger(request, the_logger, err_str):
     the_logger.error(err_str)
@@ -30,8 +31,6 @@ def err_with_logger(request, the_logger, err_str):
 
 def dict_decode(bytes_keys_values):
     return {k.decode('utf-8'):list(map(lambda x: x.decode('utf-8'), v)) for (k,v) in bytes_keys_values.items()}
-
-IMAGE_BASE = "data:image/png;base64,{}"
 
 def b64_string(data):
     return IMAGE_BASE.format((base64.b64encode(data)).decode('utf-8'))
@@ -64,22 +63,25 @@ def grid_using_crop(width, height, grid_size=8, grid_offset_x=0, grid_offset_y=0
 
     return rows, cols
 
+def unbuffer_and_decode(image_bytes):
+    try:
+        print('unbuffering {type(image_bytes)}')
+        encoded_img = np.frombuffer(image_bytes, dtype=np.uint8)
+        print('decoding', type(encoded_img), encoded_img.shape)
+        image = cv2.imdecode(encoded_img, cv2.IMREAD_UNCHANGED)
+        print(type(image))
+    except:
+        return defer.fail()
+    return defer.succeed(image)
+
+@inlineCallbacks
 def unique_tiles_using_meta(image, y_offset=0, x_offset=0, width=256, height=224, crop_l=0, crop_r=0, crop_t=0, crop_b=0, ui_x=0, ui_y=0, ui_height=0, ui_width=0):
     print('Finding unique tiles in img')
     grid_size = 8
-    myBytes = image
-    # if isinstance(image, str):
-    #     print('pass in string')
-    #     myBytes = base64.b64decode(image[22:])
-    #     print(type(myBytes))
-    # else:
-    #     print('not string img', type(image))
-    #     myBytes = image.tobytes()
-    print(type(myBytes))
-    encoded_img = np.frombuffer(myBytes, dtype=np.uint8)
-    print(type(encoded_img), encoded_img.shape)
-    image = cv2.imdecode(encoded_img, cv2.IMREAD_UNCHANGED)
-    print(type(image))
+    try:
+        image = yield unbuffer_and_decode(image)
+    except:
+        return defer.fail()
 
     h, w, *_ = image.shape
     print(f'h: {h}, w: {w}')
@@ -132,19 +134,42 @@ def unique_tiles_using_meta(image, y_offset=0, x_offset=0, width=256, height=224
     # print(img_tiles[0]['tile_data'].shape)
     return img_tiles
 
-# def logInsert(op):
-#     # print('logInsert')
-#     if op:
-#         print(op)
-#     pass
+def get_tile_ids(unique_tiles, known_tiles):
+    tiles_to_tag = {}
+    print('LEN UNIQUE: {}'.format(len(unique_tiles)))
+    try:
+        hit_ctr = 0
+        miss_ctr = 0
+        for idx, screenshot_tile in enumerate(unique_tiles):
+            to_compare = screenshot_tile['tile_data']
+            is_in_db = False
+            for tile_info in known_tiles:
+                b64_tile = tile_info['data']
+                if b64_tile == to_compare:
+                    is_in_db = True
 
-# def logErr(op):
-#     print('logErr')
-#     if op:
-#         print(op)
-#     else:
-#         print("no op on error")
+                    hit_ctr += 1
 
+                    tiles_to_tag['tile_{}'.format(idx)] = {
+                        'tile_id': tile_info['tile_id'],
+                        'tile_data': to_compare,
+                        'locations': screenshot_tile['locations']
+                        }
+                    break
+            if not is_in_db:
+                miss_ctr += 1
+                tiles_to_tag['tile_{}'.format(idx)] = {
+                    'tile_id': -1,
+                    'tile_data': to_compare,
+                    'locations': screenshot_tile['locations']
+                    }
+    except:
+        return defer.fail()
+    # print('done')
+    # print('done 2')
+    print(f'db tile hits: {hit_ctr}, misses: {miss_ctr}')
+    # print('wtf')
+    return defer.succeed(tiles_to_tag)
 
 class VGAC_Database(object):
 
@@ -167,7 +192,7 @@ class VGAC_Database(object):
         'user': os.getenv('POSTGRES_USER', 'faim_lab'),
         'password': os.getenv('POSTGRES_PASSWORD', 'dev'),
     }
-    print(keys)
+
     dbpool = adbapi.ConnectionPool('psycopg2',
                                     cp_min = 3,
                                     cp_max = 10,
@@ -255,138 +280,12 @@ class VGAC_Database(object):
         )
         return self.dbpool.runQuery(cmd, {"image_id":image_id})
 
-    @inlineCallbacks
-    def get_unique_tiles(self, image_id='default'):
-        # cmd = sql.SQL(
-        #     """SELECT image_id, affordance, data, tagger_id FROM screenshots
-        #     WHERE image_id = %(image_id)s ORDER BY tagger_id, affordance;
-        #     """
-        # )
-        print('getting unique tiles for image: ', image_id)
-        res = yield self.get_resource_by_id(table='screenshots', col='image_id', resource_id=image_id)
-        record = res[0]
-        mapper = {
-                'data': record['data'],
-                'image_id': record['image_id'],
-                'game': record['game'],
-                'width': record['width'],
-                'height': record['height'],
-                'y_offset': record['y_offset'],
-                'x_offset': record['x_offset'],
-                'crop_l': record['crop_l'],
-                'crop_r': record['crop_r'],
-                'crop_b': record['crop_b'],
-                'crop_t': record['crop_t'],
-                'ui_x': record['ui_x'],
-                'ui_y': record['ui_y'],
-                'ui_width': record['ui_width'],
-                'ui_height': record['ui_height'],
-            }
-
-        meta = {i: mapper[i] for i in mapper if i not in ['image_id', 'data', 'game']}
-        print("Untagged Image data retrieved image_id: {}".format(image_id))
-        print(f'image meta info: {meta}')
-
-        unique_tiles = unique_tiles_using_meta(
-            mapper['data'], **meta)
-        print(len(unique_tiles))
-        out = yield self.get_tile_ids(unique_tiles, mapper['game'])
-        # output = unique_tiles_using_meta()
-        return unique_tiles
-        # return self.dbpool.runQuery(cmd, {"image_id":image_id})
-
-    def tileJSON(self, results, request):
-        request.setHeader('Content-Type', 'application/json')
-        responseJSON = []
-        for record in results:
-            mapper = {
-                    'tile_id': record['tile_id'],
-                    'game': record['game'],
-                    'width': record['width'],
-                    'height': record['height'],
-                }
-            data = record['data']
-            # enc = base64.b64encode(data)
-            # strf = enc.decode('utf-8')
-            strf = b64_string(data)
-            mapper['data'] = strf
-            # if record['affordance'] == 'solid':
-            responseJSON.append(mapper)
-        return json.dumps(responseJSON)
-
-    @inlineCallbacks
-    def get_tile_ids(self, unique_tiles, game):
-        print('gettin ids')
-        # tile_data = yield treq.get(self.BASE_URL+'/tiles', params={'game': game})
-        # tile_data = yield tile_data.json()
-        tile_data = yield self.get_tiles_by_game(game)
-
-        print('tile_data got')
-        known_game_tiles = yield self.tileJSON(tile_data, None)
-        print('known tiles got')
-        tiles_to_tag = {}
-        print('LEN KNOWN TILES: {}'.format(len(known_game_tiles)))
-        hit_ctr = 0
-        miss_ctr = 0
-        for idx, screenshot_tile in enumerate(unique_tiles):
-            to_compare = screenshot_tile['tile_data']
-            is_in_db = False
-            for tile_info in known_game_tiles:
-                # cv_img, encoded_img = P.from_data_to_cv(tile_info['data'])
-                # err = P.mse(to_compare, (cv_img))
-                # if err < 0.001:
-                #     is_in_db = True
-                #     hit_ctr += 1
-                #     # print("MATCHED {}".format(tile_info['tile_id']))
-                #     # print("NUM LOCS {}".format(
-                #     #     len(screenshot_tile['locations'])))
-                #     tiles_to_tag['tile_{}'.format(idx)] = {
-                #         'tile_id': tile_info['tile_id'],
-                #         'tile_data': b64_string(P.from_cv_to_bytes(to_compare)),
-                #         'locations': screenshot_tile['locations']
-                #         }
-                #     break
-                b64_tile = tile_info['data']
-                # print(b64_tile)
-                # print('.')
-                # print(to_compare)
-                # print('...')
-                if b64_tile == to_compare:
-                    is_in_db = True
-                    hit_ctr += 1
-                    # print("MATCHED {}".format(tile_info['tile_id']))
-                    # print("NUM LOCS {}".format(
-                    #     len(screenshot_tile['locations'])))
-                    tiles_to_tag['tile_{}'.format(idx)] = {
-                        'tile_id': tile_info['tile_id'],
-                        'tile_data': to_compare,
-                        'locations': screenshot_tile['locations']
-                        }
-                    break
-            if not is_in_db:
-                print("TILE NOT MATCHED IN DB")
-                miss_ctr += 1
-                tiles_to_tag['tile_{}'.format(idx)] = {
-                    'tile_id': -1,
-                    'tile_data': to_compare,
-                    'locations': screenshot_tile['locations']
-                    }
-            # idx = 0
-            # if idx == -1:
-            #     print('NEW TILE FOUND')
-            #     height, width, channels = screenshot_tile['tile_data'].shape
-            #     tile_data = P.from_cv_to_bytes(screenshot_tile['tile_data'])
-            #     db.insert_tile(game, width, height, tile_data)
-        print(f'db tile hits: {hit_ctr}, misses: {miss_ctr}')
-        return tiles_to_tag
-
     def get_game_names(self):
         cmd = sql.SQL(
             """SELECT DISTINCT game FROM screenshots;
             """
         )
         return self.dbpool.runQuery(cmd)
-
 
     def get_tile_affordances(self, tile_id='default'):
         cmd = sql.SQL(
@@ -453,7 +352,8 @@ class VGAC_DBAPI(object):
     #--------- Debug ----------#
     @app.route('/test')
     def message(self, request):
-        return json.dumps({'message': f'{self.deployment}: dbapi test'})
+        request.setHeader('Content-Type', 'application/json')
+        return json.dumps({'status': 200, 'message': f'{self.deployment}: dbapi test'})
 
     #--------- Error Handling ----------#
     @app.handle_errors(NotFound)
@@ -468,7 +368,7 @@ class VGAC_DBAPI(object):
 
     #--------- Routes ---------#
     @app.route('/')
-    def test(self, request):
+    def documentation(self, request):
         return Redirect(b'/html/dbapi_documentation.html')
 
     @app.route('/insert', methods=['POST'])
@@ -504,33 +404,54 @@ class VGAC_DBAPI(object):
                 self.log.info(f'{tag_insertion}')
             except:
                 return err_with_logger(request, self.log, f'Bad JSON inserting screenshot tags')
-
+        request.setHeader('Content-Type', 'application/json')
         return json.dumps({'status': 200, 'message': 'Inserted into db'})
 
-    @app.route('/screenshot', methods=['GET'])
+    @app.route('/screenshots', methods=['GET'])
+    @inlineCallbacks
     def randScreenshot(self, request):
         str_args = dict_decode(request.args)
         tagger_id = str_args.get('tagger', ['default'])[0]
-        d = self.db.get_untagged_screenshot(tagger_id=tagger_id)
-        d.addCallback(self.screenshotJSON, request)
-        d.addErrback(err_with_logger, request, self.log, 'Failed to get screenshot data')
+        try:
+            d = yield self.db.get_untagged_screenshot(tagger_id=tagger_id)
+        except:
+            return err_with_logger(request, self.log, 'Failed to query DB')
+        try:
+            d = yield self.screenshotJSON(d)
+        except:
+            return err_with_logger(request, self.log, 'Failed to get screenshot data')
+        request.setHeader('Content-Type', 'application/json')
         return d
 
     @app.route('/screenshots/<string:image_id>', methods=['GET'])
+    @inlineCallbacks
     def screenshotById(self, request, image_id):
-        d = self.db.get_resource_by_id(table='screenshots', col='image_id', resource_id=image_id)
-        d.addCallback(self.screenshotJSON, request)
-        d.addErrback(err_with_logger, request, self.log, 'Failed get screenshot data')
+        try:
+            d = yield self.db.get_resource_by_id(table='screenshots', col='image_id', resource_id=image_id)
+        except:
+            return err_with_logger(request, self.log, 'Failed to query DB')
+        try:
+            d = yield self.screenshotJSON(d)
+        except:
+            return err_with_logger(request, self.log, 'Failed get screenshot data')
+        request.setHeader('Content-Type', 'application/json')
         return d
 
-    @app.route('/screenshot_tags/<string:image_id>', methods=['GET'])
+    @app.route('/screenshots/<string:image_id>/affordances', methods=['GET'])
+    @inlineCallbacks
     def tagsById(self, request, image_id):
-        d = self.db.get_screenshot_affordances(image_id=image_id)
-        d.addCallback(self.screenshot_tagJSON, request)
-        d.addErrback(err_with_logger, request, self.log, 'Failed to get screenshot affordances')
+        try:
+            d = yield self.db.get_screenshot_affordances(image_id=image_id)
+        except:
+            return err_with_logger(request, self.log, 'Failed to query DB')
+        try:
+            d = yield self.screenshot_tagJSON(d)
+        except:
+            return err_with_logger(request, self.log, 'Failed to get screenshot affordances')
+        request.setHeader('Content-Type', 'application/json')
         return d
 
-    @app.route('/screenshot_tiles/<string:image_id>', methods=['GET'])
+    @app.route('/screenshots/<string:image_id>/tiles', methods=['GET'])
     @inlineCallbacks
     def tilesByImage(self, request, image_id):
         try:
@@ -538,7 +459,6 @@ class VGAC_DBAPI(object):
             record = result[0]
         except:
             return err_with_logger(request, self.log, 'Failed to get screenshot by id')
-        
         try:
             image_data = record['data']
             image_id = record['image_id']
@@ -560,122 +480,77 @@ class VGAC_DBAPI(object):
         except:
             return err_with_logger(request, self.log, 'Bad Screenshot JSON or meta')
 
-
-        # meta = {i: mapper[i] for i in mapper if i not in ['image_id', 'data', 'game']}
-        unique_tiles = unique_tiles_using_meta(image_data, **meta)
-
-        out_tiles = yield (self.get_tile_ids(unique_tiles, game))
-        # out_tiles.addCallback(self.tile_locationJSON, request)
-        # out_tiles.addErrback(err_with_logger, request, self.log, 'Failed to query db')
+        try:
+            unique_tiles = yield unique_tiles_using_meta(image_data, **meta)
+        except:
+            return err_with_logger(request, self.log, 'Failed to get tiles for image')
+        try:
+            game_tile_data = yield self.db.get_tiles_by_game(game)
+        except:
+            return err_with_logger(request, self.log, f'Failed to get tiles for game: {game}')
+        try:
+            known_game_tiles = []
+            for record in game_tile_data:
+                mapper = {
+                        'tile_id': record['tile_id'],
+                    }
+                data = record['data']
+                strf = b64_string(data)
+                mapper['data'] = strf
+                known_game_tiles.append(mapper)
+            self.log.info(f'len known tiles: {len(known_game_tiles)}')
+            out_tiles = yield get_tile_ids(unique_tiles, known_game_tiles)
+        except:
+            return err_with_logger(request, self.log, 'Failed to match tiles for ids')
+        
+        request.setHeader('Content-Type', 'application/json')
         return json.dumps(out_tiles)
 
-    @inlineCallbacks
-    def get_tile_ids(self, unique_tiles, game):
-        print('gettin ids')
-        # tile_data = yield treq.get(self.BASE_URL+'/tiles', params={'game': game})
-        # tile_data = yield tile_data.json()
-        tile_data = yield self.db.get_tiles_by_game(game)
-
-        print('tile_data got')
-        # known_game_tiles = yield self.tileJSON(tile_data, None)
-        known_game_tiles = []
-        for record in tile_data:
-            mapper = {
-                    'tile_id': record['tile_id'],
-                }
-            data = record['data']
-            # enc = base64.b64encode(data)
-            # strf = enc.decode('utf-8')
-            strf = b64_string(data)
-            mapper['data'] = strf
-            # if record['affordance'] == 'solid':
-            known_game_tiles.append(mapper)
-        print('known tiles got')
-        tiles_to_tag = {}
-        print('LEN KNOWN TILES: {}'.format(len(known_game_tiles)))
-        print('LEN UNIQUE: {}'.format(len(unique_tiles)))
-        hit_ctr = 0
-        miss_ctr = 0
-        for idx, screenshot_tile in enumerate(unique_tiles):
-            to_compare = screenshot_tile['tile_data']
-            is_in_db = False
-            for tile_info in known_game_tiles:
-                # cv_img, encoded_img = P.from_data_to_cv(tile_info['data'])
-                # err = P.mse(to_compare, (cv_img))
-                # if err < 0.001:
-                #     is_in_db = True
-                #     hit_ctr += 1
-                #     # print("MATCHED {}".format(tile_info['tile_id']))
-                #     # print("NUM LOCS {}".format(
-                #     #     len(screenshot_tile['locations'])))
-                #     tiles_to_tag['tile_{}'.format(idx)] = {
-                #         'tile_id': tile_info['tile_id'],
-                #         'tile_data': b64_string(P.from_cv_to_bytes(to_compare)),
-                #         'locations': screenshot_tile['locations']
-                #         }
-                #     break
-                b64_tile = tile_info['data']
-                # print(b64_tile)
-                # print('.')
-                # print(to_compare)
-                # print('...')
-                if b64_tile == to_compare:
-                    is_in_db = True
-                    # print("TILE MATCHED")
-
-                    hit_ctr += 1
-                    # print("MATCHED {}".format(tile_info['tile_id']))
-                    # print("NUM LOCS {}".format(
-                    #     len(screenshot_tile['locations'])))
-                    tiles_to_tag['tile_{}'.format(idx)] = {
-                        'tile_id': tile_info['tile_id'],
-                        'tile_data': to_compare,
-                        'locations': screenshot_tile['locations']
-                        }
-                    break
-            if not is_in_db:
-                # print("TILE NOT MATCHED IN DB")
-                miss_ctr += 1
-                tiles_to_tag['tile_{}'.format(idx)] = {
-                    'tile_id': -1,
-                    'tile_data': to_compare,
-                    'locations': screenshot_tile['locations']
-                    }
-            # print('end loop')
-            # idx = 0
-            # if idx == -1:
-            #     print('NEW TILE FOUND')
-            #     height, width, channels = screenshot_tile['tile_data'].shape
-            #     tile_data = P.from_cv_to_bytes(screenshot_tile['tile_data'])
-            #     db.insert_tile(game, width, height, tile_data)
-        # print('done')
-        # print('done 2')
-        print(f'db tile hits: {hit_ctr}, misses: {miss_ctr}')
-        # print('wtf')
-        return tiles_to_tag
-
     @app.route('/tiles/<string:tile_id>', methods=['GET'])
+    @inlineCallbacks
     def tileById(self, request, tile_id):
-        d = self.db.get_resource_by_id(table='tiles',col='tile_id', resource_id=tile_id)
-        d.addCallback(self.tileJSON, request)
-        d.addErrback(err_with_logger, request, self.log, 'Failed to query db')
+        try:
+            d = yield self.db.get_resource_by_id(table='tiles',col='tile_id', resource_id=tile_id)
+        except:
+            return err_with_logger(self.log, request, 'Failed to Query DB')
+        try:    
+            d = yield self.tileJSON(d)
+        except:
+            return err_with_logger(self.log, request, 'Bad JSON from db for tiles')
+
+        request.setHeader('Content-Type', 'application/json')
         return d
 
     @app.route('/tiles/<string:tile_id>/affordances', methods=['GET'])
+    @inlineCallbacks
     def tileAffordanceById(self, request, tile_id):
-        d = self.db.get_tile_affordances(tile_id=tile_id)
-        d.addCallback(self.tile_affordanceJSON, request)
-        d.addErrback(err_with_logger, request, self.log, 'Failed to query db')
+        try:
+            d = yield self.db.get_tile_affordances(tile_id=tile_id)
+        except:
+            return err_with_logger(self.log, request, 'Failed to Query DB')
+        try:    
+            d = yield self.tile_affordanceJSON(d)
+        except:
+            return err_with_logger(self.log, request, 'Bad JSON from db for tiles')
+
+        request.setHeader('Content-Type', 'application/json')
         return d
 
     @app.route('/tiles', methods=['GET'])
+    @inlineCallbacks
     def tilesBase(self, request):
         str_args = dict_decode(request.args)
         game_name = str_args.get('game', ['default'])[0]
 
-        d = self.db.get_tiles_by_game(game_name)
-        d.addCallback(self.tileJSON, request)
-        d.addErrback(err_with_logger, request, self.log, 'Failed to query db')
+        try:
+            d = yield self.db.get_tiles_by_game(game_name)
+        except:
+            return err_with_logger(self.log, request, 'Failed to Query DB')
+        try:    
+            d = yield self.tileJSON(d)
+        except:
+            return err_with_logger(self.log, request, 'Bad JSON from db for tiles')
+        request.setHeader('Content-Type', 'application/json')
         return d
 
     #--------- Helpers ----------#
@@ -752,113 +627,123 @@ class VGAC_DBAPI(object):
         return log_str
 
     #---------- Callbacks -----------#
-    def screenshotJSON(self, results, request):
-        request.setHeader('Content-Type', 'application/json')
-        responseJSON = []
-        for record in results:
-            mapper = {
-                    'image_id': record['image_id'],
-                    'game': record['game'],
-                    'width': record['width'],
-                    'height': record['height'],
-                    'y_offset': record['y_offset'],
-                    'x_offset': record['x_offset'],
-                    'crop_l': record['crop_l'],
-                    'crop_r': record['crop_r'],
-                    'crop_b': record['crop_b'],
-                    'crop_t': record['crop_t'],
-                    'ui_x': record['ui_x'],
-                    'ui_y': record['ui_y'],
-                    'ui_width': record['ui_width'],
-                    'ui_height': record['ui_height'],
-                }
-            data = record['data']
-            # enc = base64.b64encode(data)
-            # strf = enc.decode('utf-8')
-            strf = b64_string(data)
-            mapper['data'] = strf
-            responseJSON.append(mapper)
+    def screenshotJSON(self, results):
+        try:
+            responseJSON = []
+            for record in results:
+                # self.log.info(record)
+                mapper = {
+                        'image_id': record['image_id'],
+                        'game': record['game'],
+                        'width': record['width'],
+                        'height': record['height'],
+                        'y_offset': record['y_offset'],
+                        'x_offset': record['x_offset'],
+                        'crop_l': record['crop_l'],
+                        'crop_r': record['crop_r'],
+                        'crop_b': record['crop_b'],
+                        'crop_t': record['crop_t'],
+                        'ui_x': record['ui_x'],
+                        'ui_y': record['ui_y'],
+                        'ui_width': record['ui_width'],
+                        'ui_height': record['ui_height'],
+                    }
+                data = record['data']
+                # enc = base64.b64encode(data)
+                # strf = enc.decode('utf-8')
+                strf = b64_string(data)
+                mapper['data'] = strf
+                responseJSON.append(mapper)
+        except:
+            return defer.fail()
         return json.dumps(responseJSON)
 
-    def screenshot_tagJSON(self, results, request):
-        request.setHeader('Content-Type', 'application/json')
-        responseJSON = []
-        for record in results:
-            mapper = {
-                    'image_id': record['image_id'],
-                    'affordance': record['affordance'],
-                    'tagger_id': record['tagger_id'],
-                }
-            data = record['data']
-            # enc = base64.b64encode(data)
-            # strf = enc.decode('utf-8')
-            strf = b64_string(data)
-            mapper['data'] = strf
-            # if record['affordance'] == 'solid':
-            responseJSON.append(mapper)
+    def screenshot_tagJSON(self, results):
+        try:
+            responseJSON = []
+            for record in results:
+                mapper = {
+                        'image_id': record['image_id'],
+                        'affordance': record['affordance'],
+                        'tagger_id': record['tagger_id'],
+                    }
+                data = record['data']
+                # enc = base64.b64encode(data)
+                # strf = enc.decode('utf-8')
+                strf = b64_string(data)
+                mapper['data'] = strf
+                # if record['affordance'] == 'solid':
+                responseJSON.append(mapper)
+        except:
+            return defer.fail()
         return json.dumps(responseJSON)
 
-    def tileJSON(self, results, request):
-        request.setHeader('Content-Type', 'application/json')
-        responseJSON = []
-        for record in results:
-            mapper = {
-                    'tile_id': record['tile_id'],
-                    'game': record['game'],
-                    'width': record['width'],
-                    'height': record['height'],
-                }
-            data = record['data']
-            # enc = base64.b64encode(data)
-            # strf = enc.decode('utf-8')
-            strf = b64_string(data)
-            mapper['data'] = strf
-            # if record['affordance'] == 'solid':
-            responseJSON.append(mapper)
+    def tileJSON(self, results):
+        try:
+            responseJSON = []
+            for record in results:
+                mapper = {
+                        'tile_id': record['tile_id'],
+                        'game': record['game'],
+                        'width': record['width'],
+                        'height': record['height'],
+                    }
+                data = record['data']
+                # enc = base64.b64encode(data)
+                # strf = enc.decode('utf-8')
+                strf = b64_string(data)
+                mapper['data'] = strf
+                # if record['affordance'] == 'solid':
+                responseJSON.append(mapper)
+        except:
+            return defer.fail()
         return json.dumps(responseJSON)
     
-    def tile_affordanceJSON(self, results, request):
-        request.setHeader('Content-Type', 'application/json')
-        responseJSON = []
-        for record in results:
-            mapper = {
-                'tile_id': record['tile_id'],
-                'tagger_id': record['tagger_id'],
-                'solid': record['solid'],
-                'movable': record['movable'],
-                'destroyable': record['destroyable'],
-                'dangerous': record['dangerous'],
-                'gettable': record['gettable'],
-                'portal': record['portal'],
-                'usable': record['usable'],
-                'changeable': record['changeable'],
-                'ui': record['ui'],
-                'permeable': record['permeable'],
-            }
-            responseJSON.append(mapper)
+    def tile_affordanceJSON(self, results):
+        try:
+            responseJSON = []
+            for record in results:
+                mapper = {
+                    'tile_id': record['tile_id'],
+                    'tagger_id': record['tagger_id'],
+                    'solid': record['solid'],
+                    'movable': record['movable'],
+                    'destroyable': record['destroyable'],
+                    'dangerous': record['dangerous'],
+                    'gettable': record['gettable'],
+                    'portal': record['portal'],
+                    'usable': record['usable'],
+                    'changeable': record['changeable'],
+                    'ui': record['ui'],
+                    'permeable': record['permeable'],
+                }
+                responseJSON.append(mapper)
+        except:
+            return defer.fail()
         return json.dumps(responseJSON)
 
-    def tile_locationJSON(self, results, request):
-        request.setHeader('Content-Type', 'application/json')
-        return json.dumps(results)
-        # responseJSON = []
-        # for record in results:
-        #     mapper = {
-        #             'tile_id': record['tile_id'],
-        #             'game': record['game'],
-        #             'width': record['width'],
-        #             'height': record['height'],
-        #         }
-        #     data = record['data']
-        #     # enc = base64.b64encode(data)
-        #     # strf = enc.decode('utf-8')
-        #     strf = b64_string(data)
-        #     mapper['data'] = strf
-        #     # if record['affordance'] == 'solid':
-        #     responseJSON.append(mapper)
+    def tile_locationJSON(self, results):
+        try:
+            return json.dumps(results)
+            # responseJSON = []
+            # for record in results:
+            #     mapper = {
+            #             'tile_id': record['tile_id'],
+            #             'game': record['game'],
+            #             'width': record['width'],
+            #             'height': record['height'],
+            #         }
+            #     data = record['data']
+            #     # enc = base64.b64encode(data)
+            #     # strf = enc.decode('utf-8')
+            #     strf = b64_string(data)
+            #     mapper['data'] = strf
+            #     # if record['affordance'] == 'solid':
+            #     responseJSON.append(mapper)
+        except:
+            return defer.fail()
         # return json.dumps(responseJSON)
 
 if __name__ == '__main__':
     webapp = VGAC_DBAPI()
-    print('Begin DBAPI')
     webapp.app.run("0.0.0.0", 5000)
