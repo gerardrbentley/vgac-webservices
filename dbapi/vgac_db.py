@@ -19,6 +19,9 @@ from psycopg2 import sql
 import numpy as np
 import cv2
 
+AFFORDANCES = []
+NUM_AFFORDANCES = 10
+
 def err_with_logger(request, the_logger, err_str):
     the_logger.error(err_str)
     request.setResponseCode(500)
@@ -487,18 +490,22 @@ class VGAC_DBAPI(object):
         # We use [] instead of None to just ignore the iteration, don't have to handle error
         tiles = (data.get('tiles', []))
         try:
-            tile_insertion = yield self.tiles_to_db(request, tiles, tagger_id)
+            tile_insertion = yield self.tiles_to_db(tiles, tagger_id)
             self.log.info(f'{tile_insertion}')
         except:
             return err_with_logger(request, self.log, f'Bad JSON inserting tiles')
 
         tag_images = data.get('tag_images', [])
-        self.log.info(f'tag images: {tag_images}')
         if len(tag_images) > 0 and image_id is None:
             return err_with_logger(request, self.log, f'No image id from POST request with tag images')
-        self.screenshot_tags_to_db(request, tag_images, image_id, tagger_id)
+        elif len(tag_images) % NUM_AFFORDANCES == 0:
+            try:
+                tag_insertion = yield self.screenshot_tags_to_db(tag_images, image_id, tagger_id)
+                self.log.info(f'{tag_insertion}')
+            except:
+                return err_with_logger(request, self.log, f'Bad JSON inserting screenshot tags')
 
-        return json.dumps(dict(the_data=data), indent=4)
+        return json.dumps({'status': 200, 'message': 'Inserted into db'})
 
     @app.route('/screenshot', methods=['GET'])
     def randScreenshot(self, request):
@@ -673,17 +680,14 @@ class VGAC_DBAPI(object):
 
     #--------- Helpers ----------#
     @inlineCallbacks
-    def tiles_to_db(self, request, tiles, tagger_id):
+    def tiles_to_db(self, tiles, tagger_id):
         insert_count = 0
         skip_count = 0
         # first = True
-        self.log.info('in TILES')
         for tile in tiles:
             # Tiles not in DB have tile id -1
             tile_id = tiles[tile].get('tile_id', -1)
-            self.log.info('loop')
             if not isinstance(tile_id, int):
-                self.log.info('not int')
                 try:
                     to_insert = {
                         'tile_id': tile_id,
@@ -700,20 +704,11 @@ class VGAC_DBAPI(object):
                         'permeable': bool(int(tiles[tile]['permeable'])),
                         'dt': datetime.now()
                     }
-                    # if first:
-                    #     self.log.info(f'SAMPLE DB INSERT TILE TAGS ID: {tile_id}')
-                    #     self.log.info(f'to insert: {to_insert}')
-                    #     first = False
+
                     insert_count += 1
-                    self.log.info('mapping worked')
-                    try:
-                        yield self.db.insert_tile_tag(to_insert)
-                        self.log.info('success yield insert')
-                    except: 
-                        self.log.info('defer insert fail')
-                        return defer.fail()
+                    yield self.db.insert_tile_tag(to_insert)
                 except:
-                    self.log.info('Int failure')
+                    self.log.error('Defer insert failure')
                     return defer.fail()
             else:
                 skip_count += 1
@@ -721,8 +716,8 @@ class VGAC_DBAPI(object):
         # self.log.info(log_str)
         return log_str
     
-    def screenshot_tags_to_db(self, request, tag_images, image_id, tagger_id):
-        affordance_count = 0
+    @inlineCallbacks
+    def screenshot_tags_to_db(self, tag_images, image_id, tagger_id):
         count = 0
         for affordance in tag_images:
             # self.log.info(f'affordance: {affordance}')
@@ -745,14 +740,16 @@ class VGAC_DBAPI(object):
                         'dt': datetime.now(),
                     }
                     # self.log.info(f'to insert: {to_insert}')
-
-                    self.db.insert_screenshot_tag(to_insert)
+                    
+                    yield self.db.insert_screenshot_tag(to_insert)
                     count += 1
                 else:
                     self.log.error(f'Wrong Data tag on {affordance} b64 prefix: {data_tag}')
+                    return defer.fail()
             except:
-                err_with_logger(request, self.log, f'Bad JSON inserting affordance tag data')
-        self.log.info(f'Num affordance channels inserted: {count}')
+                return defer.fail()
+        log_str = f'Num affordance channels inserted: {count}'
+        return log_str
 
     #---------- Callbacks -----------#
     def screenshotJSON(self, results, request):
