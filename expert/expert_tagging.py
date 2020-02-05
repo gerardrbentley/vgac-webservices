@@ -9,6 +9,7 @@ import json
 import os
 import base64
 
+
 def fetch_json_with_logger(the_logger, url, params=None):
     try:
         output = yield treq.get(url, params)
@@ -20,12 +21,15 @@ def fetch_json_with_logger(the_logger, url, params=None):
         return err_with_logger(the_logger, f'Bad json from {url}')
     return output
 
+
 def err_with_logger(the_logger, err_str):
     the_logger.error(err_str)
     return json.dumps({'output': {'status': 500, 'message': err_str}})
 
+
 def dict_decode(bytes_keys_values):
-    return {k.decode('utf-8'):list(map(lambda x: x.decode('utf-8'), v)) for (k,v) in bytes_keys_values.items()}
+    return {k.decode('utf-8'): list(map(lambda x: x.decode('utf-8'), v)) for (k, v) in bytes_keys_values.items()}
+
 
 class ExpertTagger(object):
     app = Klein()
@@ -36,7 +40,8 @@ class ExpertTagger(object):
         self.BASE_URL = 'http://dbapi:5000'
         if self.deployment == 'staging':
             self.BASE_URL = 'http://dbapi-staging:5000'
-        self.log.info(f'Expert Tagger on {self.deployment} running, dbapi: {self.BASE_URL}')
+        self.log.info(
+            f'Expert Tagger on {self.deployment} running, dbapi: {self.BASE_URL}')
 
     #--------- Debug ----------#
     @app.route("/test")
@@ -57,19 +62,20 @@ class ExpertTagger(object):
             'tagger', ['default-tagger'])[0]
         if tagger_id == 'default-tagger':
             self.log.info("NO TAGGER ID IN GET IMAGE")
-        
-        self.log.info(f'Fetching for {tagger_id}: Expert Tagger on {self.deployment}, dbapi: {self.BASE_URL}')
+
+        self.log.info(
+            f'Fetching for {tagger_id}: Expert Tagger on {self.deployment}, dbapi: {self.BASE_URL}')
 
         try:
-            image_data = yield treq.get(self.BASE_URL+'/screenshot', params={'tagger': tagger_id})
+            image_data = yield treq.get(self.BASE_URL+'/screenshots', params={'tagger': tagger_id})
         except:
-            return err_with_logger(self.log, f'Fetch at {self.BASE_URL}/screenshot failed')
+            return err_with_logger(self.log, f'Fetch at {self.BASE_URL}/screenshots failed')
         try:
             image_data = yield image_data.json()
             self.log.info(f'image data type: {type(image_data)}')
             image_data = image_data[0]
         except:
-            return err_with_logger(self.log, f'Bad json from {self.BASE_URL}/screenshot')
+            return err_with_logger(self.log, f'Bad json from {self.BASE_URL}/screenshots')
 
         # image_data = fetch_json_with_logger(self.log, self.BASE_URL+'/screenshot', params={'tagger': tagger_id})
         self.log.info(f'image data type: {type(image_data)}')
@@ -77,13 +83,13 @@ class ExpertTagger(object):
 
         self.log.info(f'Fetching tiles for image: {image_id}')
         try:
-            unique_tiles = yield treq.get(self.BASE_URL+'/screenshot_tiles/'+image_id)
+            unique_tiles = yield treq.get(f'{self.BASE_URL}/screenshots/{image_id}/tiles')
         except:
-            return err_with_logger(self.log, f'Fetch at {self.BASE_URL}/screenshot_tiles/{image_id} failed')
+            return err_with_logger(self.log, f'Fetch at {self.BASE_URL}/screenshots/{image_id}/tiles failed')
         try:
             tiles_to_tag = yield unique_tiles.json()
         except:
-            return err_with_logger(self.log, f'Bad json from {self.BASE_URL}/screenshot_tiles/{image_id}')
+            return err_with_logger(self.log, f'Bad json from {self.BASE_URL}/screenshots/{image_id}/tiles')
 
         output = {
             'image': image_data['data'],
@@ -92,8 +98,10 @@ class ExpertTagger(object):
             'y_offset': image_data['y_offset'],
             'x_offset': image_data['x_offset']
         }
-        self.log.info(f'Good Fetch: Expert Tagger on {self.deployment}, dbapi: {self.BASE_URL}')
+        self.log.info(
+            f'Good Fetch: Expert Tagger on {self.deployment}, dbapi: {self.BASE_URL}')
         return json.dumps({'output': output})
+
 
 if __name__ == '__main__':
     webapp = ExpertTagger()

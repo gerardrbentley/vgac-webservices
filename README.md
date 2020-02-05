@@ -18,16 +18,18 @@ git clone $URL $FOLDER
 cd $FOLDER
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
+This requires docker to be [installed](https://docs.docker.com/v17.09/engine/installation/#supported-platforms), you probably want the stable Community Edition.
 
-This spins up fresh instances of the db, dbapi, and nginx containers if they don't already exist. Also currently starts a db_manager and expert container.
+This spins up fresh instances of the nginx reverse-proxy, database, dbapi, expert api, and single-tile api containers if they don't already exist.
 Fetches db connection information from .env file.
-Requires db_manager to run if database is not filled already
+Requires db_manager to run if database is not filled already (See DB Manager section below)
 
-You should copy the contents of /nginx_config/ into /dev_config/ and set a localhost server in main_nginx.conf
-By default the db-manager will use /testfolder/games and /testfolder/out_data for ingesting and bouncing, so you should populate games (current vgac zip available at vgac tagging project). 
-(testfolder and dev_config are .gitignored'd by default, so you have to add them to your local set up)
+You should change the `server` variable in /nginx_config/default.conf from `pom-itb-cs1.campus.pomona.edu` to `localhost`
+
+By default the db-manager will use /testfolder/games and /testfolder/out_data for ingesting and bouncing, so you should populate /testfolder/games before running anything (current vgac zip available at vgac tagging project). 
+(testfolder is .gitignored'd by default, so you have to add the folders to your local set up)
+
 See docker-compose.dev.yml for host mounted location info
-
 
 After docker-compose up runs you should be able to navigate to http://localhost/html/expert.html and be served a page. Use the DB Manager to add data
 
@@ -45,7 +47,7 @@ keys = {'host': os.getenv('POSTGRES_HOST', 'vgac-db'),
 ```
 
 ```
-docker run -it --env-file .env --network=vgac-network -v "/USER/PATH/THIS_FOLDER/testfolder/games":/app/games:z -v "/USER/PATH/THIS_FOLDER/testfolder/out_data":/app/out_dataset:z db-manager
+docker run -it --network=vgac-network -v "/USER/PATH/THIS_FOLDER/testfolder/games":/app/games:z -v "/USER/PATH/THIS_FOLDER/testfolder/out_data":/app/out_dataset:z db-manager
 ```
 (replacing /USER/PATH/THIS_FOLDER with something like /Users/username/vgac_web or whatever `pwd` tells you)
 
