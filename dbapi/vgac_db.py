@@ -5,14 +5,25 @@ import os
 
 from klein import Klein
 from twisted.web.static import File
+from twisted.web.util import Redirect
 from twisted.enterprise import adbapi
 from twisted.internet.defer import inlineCallbacks, ensureDeferred
+from twisted.internet import defer
+from twisted.logger import Logger
+
+from werkzeug.exceptions import HTTPException, NotFound
 
 from psycopg2.extras import DictCursor
 from psycopg2 import sql
 
 import numpy as np
 import cv2
+
+def err_with_logger(request, the_logger, err_str):
+    the_logger.error(err_str)
+    request.setResponseCode(500)
+    # return Redirect(b'/500.html')
+    return json.dumps({'status': 500, 'message': err_str})
 
 def dict_decode(bytes_keys_values):
     return {k.decode('utf-8'):list(map(lambda x: x.decode('utf-8'), v)) for (k,v) in bytes_keys_values.items()}
@@ -118,18 +129,18 @@ def unique_tiles_using_meta(image, y_offset=0, x_offset=0, width=256, height=224
     # print(img_tiles[0]['tile_data'].shape)
     return img_tiles
 
-def logInsert(op):
-    # print('logInsert')
-    if op:
-        print(op)
-    pass
+# def logInsert(op):
+#     # print('logInsert')
+#     if op:
+#         print(op)
+#     pass
 
-def logErr(op):
-    print('logErr')
-    if op:
-        print(op)
-    else:
-        print("no op on error")
+# def logErr(op):
+#     print('logErr')
+#     if op:
+#         print(op)
+#     else:
+#         print("no op on error")
 
 
 class VGAC_Database(object):
@@ -173,7 +184,7 @@ class VGAC_Database(object):
             RETURNING image_id
             """
         )
-        self.dbpool.runOperation(cmd, kwargs).addCallbacks(logInsert, logErr)
+        return self.dbpool.runOperation(cmd, kwargs)
         # print('Insert Screenshot tag Called and Ended')
 
     def insert_tile(self, kwargs):
@@ -183,7 +194,7 @@ class VGAC_Database(object):
             RETURNING tile_id
             """
         )
-        self.dbpool.runOperation(cmd, kwargs).addCallbacks(logInsert, logErr)
+        return self.dbpool.runOperation(cmd, kwargs)
         # print('Insert Tile Called and Ended')
 
     def insert_tile_tag(self, kwargs):
@@ -196,7 +207,7 @@ class VGAC_Database(object):
             """
         )
 
-        self.dbpool.runOperation(cmd, kwargs).addCallbacks(logInsert, logErr)
+        return self.dbpool.runOperation(cmd, kwargs)
         # print('Insert Tile Tag Called and Ended')
 
     def queryAll(self, table):
@@ -425,112 +436,69 @@ class VGAC_Database(object):
 
 
 class VGAC_DBAPI(object):
-
     app = Klein()
     db = VGAC_Database()
-    deployment = str(os.getenv('TARGET', 'dev'))
-    if deployment == 'staging':
-        print('from staging dbapi')
-        postgres_host = 'vgac-db-staging'
-    else:
-        postgres_host = 'vgac-db'
-        print('from live dbapi')
+    log = Logger()
 
-    @app.route('/')
-    def test(self, request):
-        return json.dumps({'message': f'{self.deployment}: Hello From VGAC DBAPI'})
+    def __init__(self):
+        self.deployment = str(os.getenv('TARGET', 'test'))
+        self.POSTGRES_HOST = 'vgac-db'
+        if self.deployment == 'staging':
+            self.POSTGRES_HOST = 'vgac-db-staging'
+        self.log.info(f'DB API on {self.deployment} running, database connection: {self.POSTGRES_HOST}')
 
+    #--------- Debug ----------#
     @app.route('/test')
-    def base2(self, request):
+    def message(self, request):
         return json.dumps({'message': f'{self.deployment}: dbapi test'})
 
+    #--------- Error Handling ----------#
+    @app.handle_errors(NotFound)
+    def not_found_handler(self, request, failure):
+        request.setResponseCode(404)
+        return Redirect(b'/404.html')
+        
+    @app.handle_errors
+    def error_handler(self, request, failure):
+        request.setResponseCode(500)
+        return Redirect(b'/500.html')
 
     #--------- Routes ---------#
+    @app.route('/')
+    def test(self, request):
+        return Redirect(b'/html/dbapi_documentation.html')
+
     @app.route('/insert', methods=['POST'])
+    @inlineCallbacks
     def insert(self, request):
-        print(type(request.args))
-        data = json.loads(request.content.read())
-        tagger_id = data.get('tagger_id', [None])
-        image_id = data.get('image_id', [None])
-        print(f'RECEIVED TAGS FROM: {tagger_id} FOR IMAGE: {image_id}')
-        # print(f'data: {data}')
-        tiles = (data.get('tiles', [None]))
-        # print(tiles)
+        self.log.info(f'POST received type: {type(request.args)}')
+        try:
+            data = json.loads(request.content.read())
+        except:
+            return err_with_logger(request, self.log, f'Bad JSON from POST request')
+        
+        tagger_id = data.get('tagger_id', None)
+        image_id = data.get('image_id', None)
+        if tagger_id is None:
+            return err_with_logger(request, self.log, f'Bad tagger id or image id from POST request')
+        
+        self.log.info(f'RECEIVED TAGS FROM: {tagger_id} FOR IMAGE: {image_id}')
+        
+        # We use [] instead of None to just ignore the iteration, don't have to handle error
+        tiles = (data.get('tiles', []))
+        try:
+            tile_insertion = yield self.tiles_to_db(request, tiles, tagger_id)
+            self.log.info(f'{tile_insertion}')
+        except:
+            return err_with_logger(request, self.log, f'Bad JSON inserting tiles')
 
-        insert_count = 0
-        skip_count = 0
-        first = True
-        for tile in tiles:
-            tile_id = tiles[tile]['tile_id']
-            if not isinstance(tile_id, int):
-                to_insert = {
-                    'tile_id': tile_id,
-                    'tagger_id': tagger_id,
-                    'solid': bool(int(tiles[tile]['solid'])),
-                    'movable': bool(int(tiles[tile]['movable'])),
-                    'destroyable': bool(int(tiles[tile]['destroyable'])),
-                    'dangerous': bool(int(tiles[tile]['dangerous'])),
-                    'gettable': bool(int(tiles[tile]['gettable'])),
-                    'portal': bool(int(tiles[tile]['portal'])),
-                    'usable': bool(int(tiles[tile]['usable'])),
-                    'changeable': bool(int(tiles[tile]['changeable'])),
-                    'ui': bool(int(tiles[tile]['ui'])),
-                    'permeable': bool(int(tiles[tile]['permeable'])),
-                    'dt': datetime.now()
-                }
-                if first:
-                    print('SAMPLE DB INSERT TILE TAGS ID: {}'.format(
-                        tile_id))
-                    print(f'to insert: {to_insert}')
-                    first = False
-                # db.insert_tile_tag(tiles[tile]['tile_id'], tagger, tiles[tile]['solid'], tiles[tile]['movable'],
-                #                    tiles[tile]['destroyable'], tiles[tile]['dangerous'], tiles[tile]['gettable'], tiles[tile]['portal'], tiles[tile]['usable'], tiles[tile]['changeable'], tiles[tile]['ui'])
-                insert_count += 1
-                self.db.insert_tile_tag(to_insert)
-            else:
-                skip_count += 1
-
-        print('INSERTED {} Tile Tags. SKIPPED {} Tiles. SUBMITTED: {}'.format(
-            insert_count, skip_count, len(tiles)))
-
-        tag_images = data['tag_images']
-        affordance_count = 0
-        # first = True
-        count = 0
-        for affordance in tag_images:
-            b64_channel = tag_images[affordance]
-            # print(b64_channel)
-            # print('unbase 64', type(b64_channel))
-            data_tag = b64_channel[:22]
-            if data_tag == IMAGE_BASE[:22]:
-                b64_channel = b64_channel[22:]
-                tag_data_bytes = base64.b64decode(b64_channel)
-                # affordance_num = P.AFFORDANCES.index(affordance)
-
-                # print('DB INSERT IMAGE TAGS for afford: {}, data type: {}'.format(
-                #     affordance, type(tag_data_bytes)))
-
-                to_insert = {
-                    'image_id': image_id,
-                    'affordance': affordance,
-                    'tagger_id': tagger_id,
-                    'data': tag_data_bytes,
-                    'dt': datetime.now(),
-                }
-                # print(f'to insert: {to_insert}')
-                self.db.insert_screenshot_tag(to_insert)
-                count += 1
-            else:
-                print(f'Wrong Data tag on {affordance} b64 prefix: {data_tag}')
-
-            # db.insert_screenshot_tag(image_id, affordance_num, tagger, to_insert)
-        print(f'num affordance channels inserted: {count}')
+        tag_images = data.get('tag_images', [])
+        self.log.info(f'tag images: {tag_images}')
+        if len(tag_images) > 0 and image_id is None:
+            return err_with_logger(request, self.log, f'No image id from POST request with tag images')
+        self.screenshot_tags_to_db(request, tag_images, image_id, tagger_id)
 
         return json.dumps(dict(the_data=data), indent=4)
-        # d = self.db.insert(first_name, last_name, age)
-        # d.addCallback(self.onSuccess, request, 'Insert success')
-        # d.addErrback(self.onFail, request, 'Insert failed')
-        # return d
 
     @app.route('/screenshot', methods=['GET'])
     def randScreenshot(self, request):
@@ -538,60 +506,60 @@ class VGAC_DBAPI(object):
         tagger_id = str_args.get('tagger', ['default'])[0]
         d = self.db.get_untagged_screenshot(tagger_id=tagger_id)
         d.addCallback(self.screenshotJSON, request)
-        d.addErrback(self.onFail, request, 'Failed to query db')
+        d.addErrback(err_with_logger, request, self.log, 'Failed to get screenshot data')
         return d
-
-    # @app.route('/screenshots/<string:tagger_id>', methods=['GET'])
-    # def queryUn(self, request, tagger_id):
-    #     d = self.db.get_untagged_screenshot(tagger_id=tagger_id)
-    #     d.addCallback(self.screenshotJSON, request)
-    #     d.addErrback(self.onFail, request, 'Failed to query db')
-    #     return d
 
     @app.route('/screenshots/<string:image_id>', methods=['GET'])
     def screenshotById(self, request, image_id):
         d = self.db.get_resource_by_id(table='screenshots', col='image_id', resource_id=image_id)
         d.addCallback(self.screenshotJSON, request)
-        d.addErrback(self.onFail, request, 'Failed to query db')
+        d.addErrback(err_with_logger, request, self.log, 'Failed get screenshot data')
         return d
 
     @app.route('/screenshot_tags/<string:image_id>', methods=['GET'])
     def tagsById(self, request, image_id):
         d = self.db.get_screenshot_affordances(image_id=image_id)
         d.addCallback(self.screenshot_tagJSON, request)
-        d.addErrback(self.onFail, request, 'Failed to query db')
+        d.addErrback(err_with_logger, request, self.log, 'Failed to get screenshot affordances')
         return d
 
     @app.route('/screenshot_tiles/<string:image_id>', methods=['GET'])
     @inlineCallbacks
     def tilesByImage(self, request, image_id):
-        # d = self.db.get_unique_tiles(image_id=image_id)
-        res = yield self.db.get_resource_by_id(table='screenshots', col='image_id', resource_id=image_id)
-        record = res[0]
-        mapper = {
-                'data': record['data'],
-                'image_id': record['image_id'],
-                'game': record['game'],
-                'width': record['width'],
-                'height': record['height'],
-                'y_offset': record['y_offset'],
-                'x_offset': record['x_offset'],
-                'crop_l': record['crop_l'],
-                'crop_r': record['crop_r'],
-                'crop_b': record['crop_b'],
-                'crop_t': record['crop_t'],
-                'ui_x': record['ui_x'],
-                'ui_y': record['ui_y'],
-                'ui_width': record['ui_width'],
-                'ui_height': record['ui_height'],
-            }
+        try:
+            result = yield self.db.get_resource_by_id(table='screenshots', col='image_id', resource_id=image_id)
+            record = result[0]
+        except:
+            return err_with_logger(request, self.log, 'Failed to get screenshot by id')
+        
+        try:
+            image_data = record['data']
+            image_id = record['image_id']
+            game = record['game']
+            meta = {
+                    'width': record['width'],
+                    'height': record['height'],
+                    'y_offset': record['y_offset'],
+                    'x_offset': record['x_offset'],
+                    'crop_l': record['crop_l'],
+                    'crop_r': record['crop_r'],
+                    'crop_b': record['crop_b'],
+                    'crop_t': record['crop_t'],
+                    'ui_x': record['ui_x'],
+                    'ui_y': record['ui_y'],
+                    'ui_width': record['ui_width'],
+                    'ui_height': record['ui_height'],
+                }
+        except:
+            return err_with_logger(request, self.log, 'Bad Screenshot JSON or meta')
 
-        meta = {i: mapper[i] for i in mapper if i not in ['image_id', 'data', 'game']}
-        unique_tiles = unique_tiles_using_meta(mapper['data'], **meta)
-        print('unique tiles got')
-        out_tiles = yield (self.get_tile_ids(unique_tiles, mapper['game']))
+
+        # meta = {i: mapper[i] for i in mapper if i not in ['image_id', 'data', 'game']}
+        unique_tiles = unique_tiles_using_meta(image_data, **meta)
+
+        out_tiles = yield (self.get_tile_ids(unique_tiles, game))
         # out_tiles.addCallback(self.tile_locationJSON, request)
-        # out_tiles.addErrback(self.onFail, request, 'Failed to query db')
+        # out_tiles.addErrback(err_with_logger, request, self.log, 'Failed to query db')
         return json.dumps(out_tiles)
 
     @inlineCallbacks
@@ -683,14 +651,14 @@ class VGAC_DBAPI(object):
     def tileById(self, request, tile_id):
         d = self.db.get_resource_by_id(table='tiles',col='tile_id', resource_id=tile_id)
         d.addCallback(self.tileJSON, request)
-        d.addErrback(self.onFail, request, 'Failed to query db')
+        d.addErrback(err_with_logger, request, self.log, 'Failed to query db')
         return d
 
     @app.route('/tiles/<string:tile_id>/affordances', methods=['GET'])
     def tileAffordanceById(self, request, tile_id):
         d = self.db.get_tile_affordances(tile_id=tile_id)
-        d.addCallback(self.tileJSON, request)
-        d.addErrback(self.onFail, request, 'Failed to query db')
+        d.addCallback(self.tile_affordanceJSON, request)
+        d.addErrback(err_with_logger, request, self.log, 'Failed to query db')
         return d
 
     @app.route('/tiles', methods=['GET'])
@@ -700,23 +668,93 @@ class VGAC_DBAPI(object):
 
         d = self.db.get_tiles_by_game(game_name)
         d.addCallback(self.tileJSON, request)
-        d.addErrback(self.onFail, request, 'Failed to query db')
+        d.addErrback(err_with_logger, request, self.log, 'Failed to query db')
         return d
 
+    #--------- Helpers ----------#
+    @inlineCallbacks
+    def tiles_to_db(self, request, tiles, tagger_id):
+        insert_count = 0
+        skip_count = 0
+        # first = True
+        self.log.info('in TILES')
+        for tile in tiles:
+            # Tiles not in DB have tile id -1
+            tile_id = tiles[tile].get('tile_id', -1)
+            self.log.info('loop')
+            if not isinstance(tile_id, int):
+                self.log.info('not int')
+                try:
+                    to_insert = {
+                        'tile_id': tile_id,
+                        'tagger_id': tagger_id,
+                        'solid': bool(int(tiles[tile]['solid'])),
+                        'movable': bool(int(tiles[tile]['movable'])),
+                        'destroyable': bool(int(tiles[tile]['destroyable'])),
+                        'dangerous': bool(int(tiles[tile]['dangerous'])),
+                        'gettable': bool(int(tiles[tile]['gettable'])),
+                        'portal': bool(int(tiles[tile]['portal'])),
+                        'usable': bool(int(tiles[tile]['usable'])),
+                        'changeable': bool(int(tiles[tile]['changeable'])),
+                        'ui': bool(int(tiles[tile]['ui'])),
+                        'permeable': bool(int(tiles[tile]['permeable'])),
+                        'dt': datetime.now()
+                    }
+                    # if first:
+                    #     self.log.info(f'SAMPLE DB INSERT TILE TAGS ID: {tile_id}')
+                    #     self.log.info(f'to insert: {to_insert}')
+                    #     first = False
+                    insert_count += 1
+                    self.log.info('mapping worked')
+                    try:
+                        yield self.db.insert_tile_tag(to_insert)
+                        self.log.info('success yield insert')
+                    except: 
+                        self.log.info('defer insert fail')
+                        return defer.fail()
+                except:
+                    self.log.info('Int failure')
+                    return defer.fail()
+            else:
+                skip_count += 1
+        log_str = f'Inserted {insert_count} Tile Tags. SKIPPED {skip_count} Tiles. SUBMITTED: {len(tiles)}'
+        # self.log.info(log_str)
+        return log_str
+    
+    def screenshot_tags_to_db(self, request, tag_images, image_id, tagger_id):
+        affordance_count = 0
+        count = 0
+        for affordance in tag_images:
+            # self.log.info(f'affordance: {affordance}')
+            try:
+                b64_channel = tag_images[affordance]
+                # self.log.info(b64_channel)
+                data_tag = b64_channel[:22]
+                # self.log.info(data_tag)
+                if data_tag == IMAGE_BASE[:22]:
+                    b64_channel = b64_channel[22:]
+                    # self.log.info('got b64 chan')
+                    tag_data_bytes = base64.b64decode(b64_channel)
+                    # self.log.info('got decoded bytes')
 
+                    to_insert = {
+                        'image_id': image_id,
+                        'affordance': affordance,
+                        'tagger_id': tagger_id,
+                        'data': tag_data_bytes,
+                        'dt': datetime.now(),
+                    }
+                    # self.log.info(f'to insert: {to_insert}')
+
+                    self.db.insert_screenshot_tag(to_insert)
+                    count += 1
+                else:
+                    self.log.error(f'Wrong Data tag on {affordance} b64 prefix: {data_tag}')
+            except:
+                err_with_logger(request, self.log, f'Bad JSON inserting affordance tag data')
+        self.log.info(f'Num affordance channels inserted: {count}')
 
     #---------- Callbacks -----------#
-    def onSuccess(self, result, request, msg):
-        request.setResponseCode(201)
-        response = {'message': msg}
-        return json.dumps(response)
-
-    def onFail(self, failure, request, msg):
-        request.setResponseCode(417)
-        response = {'message': msg}
-        print(failure)
-        return json.dumps(response)
-
     def screenshotJSON(self, results, request):
         request.setHeader('Content-Type', 'application/json')
         responseJSON = []
@@ -779,6 +817,27 @@ class VGAC_DBAPI(object):
             strf = b64_string(data)
             mapper['data'] = strf
             # if record['affordance'] == 'solid':
+            responseJSON.append(mapper)
+        return json.dumps(responseJSON)
+    
+    def tile_affordanceJSON(self, results, request):
+        request.setHeader('Content-Type', 'application/json')
+        responseJSON = []
+        for record in results:
+            mapper = {
+                'tile_id': record['tile_id'],
+                'tagger_id': record['tagger_id'],
+                'solid': record['solid'],
+                'movable': record['movable'],
+                'destroyable': record['destroyable'],
+                'dangerous': record['dangerous'],
+                'gettable': record['gettable'],
+                'portal': record['portal'],
+                'usable': record['usable'],
+                'changeable': record['changeable'],
+                'ui': record['ui'],
+                'permeable': record['permeable'],
+            }
             responseJSON.append(mapper)
         return json.dumps(responseJSON)
 
