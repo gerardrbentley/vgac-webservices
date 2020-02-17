@@ -9,11 +9,11 @@ stages:
   - deploy
 
 variables:
-  DBAPI_IMAGE_TAG: $CI_REGISTRY_IMAGE/dbapi:$CI_COMMIT_REF_SLUG
-  REVERSE_PROXY_IMAGE_TAG: $CI_REGISTRY_IMAGE/reverse-proxy:$CI_COMMIT_REF_SLUG
-  DB_MANAGER_IMAGE_TAG: $CI_REGISTRY_IMAGE/db-manager:$CI_COMMIT_REF_SLUG
-  EXPERT_IMAGE_TAG: $CI_REGISTRY_IMAGE/expert:$CI_COMMIT_REF_SLUG
-  SINGLE_TILE_IMAGE_TAG: $CI_REGISTRY_IMAGE/single-tile:$CI_COMMIT_REF_SLUG
+  DBAPI_IMAGE_TAG: $DOCKER_HUB:dbapi-$CI_COMMIT_REF_SLUG
+  REVERSE_PROXY_IMAGE_TAG: $DOCKER_HUB:reverse-proxy-$CI_COMMIT_REF_SLUG
+  DB_MANAGER_IMAGE_TAG: $DOCKER_HUB:db-manager-$CI_COMMIT_REF_SLUG
+  EXPERT_IMAGE_TAG: $DOCKER_HUB:expert-$CI_COMMIT_REF_SLUG
+  SINGLE_TILE_IMAGE_TAG: $DOCKER_HUB:single-tile-$CI_COMMIT_REF_SLUG
 
 reverse_proxy:
   rules:
@@ -28,7 +28,8 @@ reverse_proxy:
     entrypoint: [""]
   script:
     - pwd
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+#    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - echo "{\"auths\":{\"$DOCKER_HUB\":{\"auth\":\"$GERARD_DOCKER_AUTH\"}}}" > /kaniko/.docker/config.json
     - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile-faim-nginx --destination $REVERSE_PROXY_IMAGE_TAG
   stage: build_proxy
@@ -44,7 +45,8 @@ vgac_dbapi:
     entrypoint: [""]
   script:
     - cd dbapi
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+#    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - echo "{\"auths\":{\"$DOCKER_HUB\":{\"auth\":\"$GERARD_DOCKER_AUTH\"}}}" > /kaniko/.docker/config.json
     - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
     - /kaniko/executor --context $CI_PROJECT_DIR/dbapi --dockerfile $CI_PROJECT_DIR/dbapi/Dockerfile-dbapi --destination $DBAPI_IMAGE_TAG
   stage: build_api
@@ -60,7 +62,8 @@ db_manager:
     entrypoint: [""]
   script:
     - cd db_manager
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+#    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - echo "{\"auths\":{\"$DOCKER_HUB\":{\"auth\":\"$GERARD_DOCKER_AUTH\"}}}" > /kaniko/.docker/config.json
     - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
     - /kaniko/executor --context $CI_PROJECT_DIR/db_manager --dockerfile $CI_PROJECT_DIR/db_manager/Dockerfile-db-manager --destination $DB_MANAGER_IMAGE_TAG
   stage: build_manager
@@ -76,7 +79,8 @@ expert:
     entrypoint: [""]
   script:
     - cd expert
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+#    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - echo "{\"auths\":{\"$DOCKER_HUB\":{\"auth\":\"$GERARD_DOCKER_AUTH\"}}}" > /kaniko/.docker/config.json
     - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
     - /kaniko/executor --context $CI_PROJECT_DIR/expert --dockerfile $CI_PROJECT_DIR/expert/Dockerfile-expert --destination $EXPERT_IMAGE_TAG
   stage: build_expert
@@ -92,7 +96,8 @@ single:
     entrypoint: [""]
   script:
     - cd single_tile_tagging
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+#    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - echo "{\"auths\":{\"$DOCKER_HUB\":{\"auth\":\"$GERARD_DOCKER_AUTH\"}}}" > /kaniko/.docker/config.json
     - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
     - /kaniko/executor --context $CI_PROJECT_DIR/single_tile_tagging --dockerfile $CI_PROJECT_DIR/single_tile_tagging/Dockerfile-single-tile --destination $SINGLE_TILE_IMAGE_TAG
   stage: build_single
@@ -146,9 +151,8 @@ deploy-staging:
       -o StrictHostKeyChecking=no \
       -i $PRIVATE_KEY "
      cd /webservices
-     echo "$(docker --version)"
      echo 'Docker login'
-     docker login -u auto-deploy-token -p $GENERATED_TOKEN $CI_REGISTRY || exit 1
+     docker login -u gerardrbentley -p $GERARD_DOCKER_TOKEN || exit 1
      echo 'Pull images'
      DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
      REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
@@ -197,7 +201,7 @@ deploy-prod:
       -i $PRIVATE_KEY "
      cd /webservices
      echo 'Docker login'
-     docker login -u auto-deploy-token -p $GENERATED_TOKEN $CI_REGISTRY || exit 1
+     docker login -u gerardrbentley -p $GERARD_DOCKER_TOKEN || exit 1
      echo 'Pull images'
      DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
      REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
