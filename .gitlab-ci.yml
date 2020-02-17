@@ -123,7 +123,6 @@ single:
 #       faim@vgac.cs.pomona.edu:/data/faim
 #     echo 'Config files copied to /data/faim/nginx_config'
 
-
 deploy-staging:
   stage: staging
   rules:
@@ -140,13 +139,13 @@ deploy-staging:
       -o UserKnownHostsFile=/dev/null \
       -o StrictHostKeyChecking=no  \
       docker-compose.staging.yml \
-      faim@vgac.cs.pomona.edu:~/webservices/docker-compose.staging.yml
+      faim@vgac.cs.pomona.edu:/webservices/docker-compose.staging.yml
     echo 'Docker-compose copied'
     ssh faim@vgac.cs.pomona.edu \
       -o UserKnownHostsFile=/dev/null \
       -o StrictHostKeyChecking=no \
       -i $PRIVATE_KEY "
-     cd ~faim/webservices
+     cd /webservices
      echo 'Docker login'
      docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY || exit 1
      echo 'Pull images'
@@ -189,13 +188,13 @@ deploy-prod:
       -o UserKnownHostsFile=/dev/null \
       -o StrictHostKeyChecking=no  \
       docker-compose.yml \
-      faim@vgac.cs.pomona.edu:~/webservices/docker-compose.yml
+      faim@vgac.cs.pomona.edu:/webservices/docker-compose.yml
     echo 'Docker-compose copied'
     ssh faim@vgac.cs.pomona.edu \
       -o UserKnownHostsFile=/dev/null \
       -o StrictHostKeyChecking=no \
       -i $PRIVATE_KEY "
-     cd ~faim/webservices
+     cd /webservices
      echo 'Docker login'
      docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY || exit 1
      echo 'Pull images'
