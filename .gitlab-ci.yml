@@ -146,9 +146,9 @@ deploy-staging:
       -o StrictHostKeyChecking=no \
       -i $PRIVATE_KEY "
      cd /webservices
-     echo docker --version
+     echo "$(docker --version)"
      echo 'Docker login'
-     docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY || exit 1
+     docker login -u auto-deploy-token -p $GENERATED_TOKEN $CI_REGISTRY || exit 1
      echo 'Pull images'
      DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
      REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
@@ -197,7 +197,7 @@ deploy-prod:
       -i $PRIVATE_KEY "
      cd /webservices
      echo 'Docker login'
-     docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY || exit 1
+     docker login -u auto-deploy-token -p $GENERATED_TOKEN $CI_REGISTRY || exit 1
      echo 'Pull images'
      DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
      REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
