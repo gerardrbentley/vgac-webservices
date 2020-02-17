@@ -16,6 +16,7 @@ from PIL import Image
 AFFORDANCES = ["solid", "movable", "destroyable",
                "dangerous", "gettable", "portal", "usable", "changeable", "ui", "permeable"]
 
+
 def load_label_from_tagger(label_file):
     if os.path.isfile(label_file):
         print('Label File Found {}'.format(label_file))
@@ -25,6 +26,7 @@ def load_label_from_tagger(label_file):
         stacked_array = None
     return stacked_array
 
+
 def list_games(dir=os.path.join('/games')):
     try:
         games = next(os.walk(dir))[1]
@@ -32,6 +34,7 @@ def list_games(dir=os.path.join('/games')):
         games = []
         print('GAME FOLDERS NOT FOUND IN GAMES, NO FILES FOUND')
     return games
+
 
 def affords_from_csv_file(file, file_name):
     if os.path.isfile(file):
@@ -43,6 +46,7 @@ def affords_from_csv_file(file, file_name):
                     out.append(row)
             return out
     return []
+
 
 def metadata_from_json(screenshots_dir, file_uuid):
     pth = os.path.join(screenshots_dir, file_uuid, f'{file_uuid}.json')
@@ -63,17 +67,18 @@ def metadata_from_json(screenshots_dir, file_uuid):
             }
             return output
     return {
-                'crop_l': 0,
-                'crop_r': 0,
-                'crop_b': 0,
-                'crop_t': 0,
-                'ui_x': 0,
-                'ui_y': 0,
-                'ui_width': 0,
-                'ui_height': 0,
-                'y_offset': 0,
-                'x_offset': 0
-            }
+        'crop_l': 0,
+        'crop_r': 0,
+        'crop_b': 0,
+        'crop_t': 0,
+        'ui_x': 0,
+        'ui_y': 0,
+        'ui_width': 0,
+        'ui_height': 0,
+        'y_offset': 0,
+        'x_offset': 0
+    }
+
 
 def stack_numpy_channels(affordance_images):
     height, width, *_ = affordance_images[0].shape
@@ -85,15 +90,16 @@ def stack_numpy_channels(affordance_images):
         output[:, :, i] = one_channel // 255
     return output
 
+
 class DB_Manager(object):
     def __init__(self, **kwargs):
         keys = {'host': os.getenv('POSTGRES_HOST', 'vgac-db'),
-            'port': os.getenv('POSTGRES_PORT', '5432'),
-            'dbname': os.getenv('POSTGRES_DB', 'affordances_db'),
-            'user': os.getenv('POSTGRES_USER', 'faim_lab'),
-            'password': os.getenv('POSTGRES_PASSWORD', 'dev'),
-            'cursor_factory': DictCursor
-        }
+                'port': os.getenv('POSTGRES_PORT', '5432'),
+                'dbname': os.getenv('POSTGRES_DB', 'affordances_db'),
+                'user': os.getenv('POSTGRES_USER', 'faim_lab'),
+                'password': os.getenv('POSTGRES_PASSWORD', 'dev'),
+                'cursor_factory': DictCursor
+                }
         print(keys)
         self.connection = psycopg2.connect(**keys)
         # self.cursor = connection.cursor()
@@ -104,10 +110,11 @@ class DB_Manager(object):
             num_images, num_tags, num_skipped = self.ingest_screenshots(
                 game, os.path.join(dir, game, 'screenshots'))
 
-            num_tiles, num_tile_tags, num_tile_skipped = self.ingest_tiles(game, os.path.join(dir, game, 'tiles'))
+            num_tiles, num_tile_tags, num_tile_skipped = self.ingest_tiles(
+                game, os.path.join(dir, game, 'tiles'))
             # ingest_sprite_files(sprite_files, game), dir
             total_ingested[game] = {
-                    'num_images': num_images, 'num_screenshot_tags': num_tags, 'num_tiles': num_tiles, 'skipped_images': num_skipped}
+                'num_images': num_images, 'num_screenshot_tags': num_tags, 'num_tiles': num_tiles, 'skipped_images': num_skipped}
         print('TOTALS: {}'.format(total_ingested))
 
     def ingest_screenshots(self, game, screenshots_dir):
@@ -121,7 +128,8 @@ class DB_Manager(object):
             screenshot_file = os.path.join(
                 screenshots_dir, screenshot_uuid, f'{screenshot_uuid}.png')
             # screenshot_uuid = os.path.splitext(file_name)[0]
-            is_in = self.check_uuid_in_table('screenshots', 'image_id', screenshot_uuid)
+            is_in = self.check_uuid_in_table(
+                'screenshots', 'image_id', screenshot_uuid)
             if is_in:
                 print(f'SKIPPED INGESTING IMAGE: {screenshot_uuid}')
                 skip_ctr += 1
@@ -137,19 +145,19 @@ class DB_Manager(object):
                 with open(screenshot_file, 'rb') as f:
                     data = f.read()
                 to_insert = {
-                        'image_id': screenshot_uuid,
-                        'game': game,
-                        'width': 256,
-                        'height': 224,
-                        'data': data,
-                        'dt': datetime.now(),
-                    }
+                    'image_id': screenshot_uuid,
+                    'game': game,
+                    'width': 256,
+                    'height': 224,
+                    'data': data,
+                    'dt': datetime.now(),
+                }
                 to_insert.update(metadata)
                 result = self.insert_screenshot(
                     to_insert)
                 print(result)
 
-            #TODO: Load known labels from numpy
+            # TODO: Load known labels from numpy
             label_files = glob.glob(os.path.join(
                 screenshots_dir, screenshot_uuid, "*.npy"))
             if len(label_files) > 0:
@@ -334,13 +342,14 @@ class DB_Manager(object):
                     print(type(db_entry))
                     print(db_entry.items())
 
-                    to_insert = {k:v for k,v in db_entry.items()}
+                    to_insert = {k: v for k, v in db_entry.items()}
                     # db_entry['file_name'] = db_entry.pop('tile_id')
                     to_csv.append(to_insert)
             with open(os.path.join(tiles_folder, 'tile_affordances.csv'), mode='w') as csv_file:
                 fieldnames = ["tile_id", "solid", "movable", "destroyable",
                               "dangerous", "gettable", "portal", "usable", "changeable", "ui", "permeable", "tagger_id"]
-                writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction='ignore')
+                writer = csv.DictWriter(
+                    csv_file, fieldnames=fieldnames, extrasaction='ignore')
                 writer.writeheader()
                 for row in to_csv:
                     writer.writerow(row)
@@ -363,10 +372,10 @@ class DB_Manager(object):
             aff = db_entry['affordance']
             # for affordance in AFFORDANCES:
             #     db_entry = db_entries[row_ctr]
-                # print(type(db_entry.data))
-                # if db_entry.affordance != affordance:
-                #     print('AFFORDANCES IN WRONG ORDER, ', db_entry.affordance)
-                # tag_cv, encoded = P.from_data_to_cv(db_entry['tags'])
+            # print(type(db_entry.data))
+            # if db_entry.affordance != affordance:
+            #     print('AFFORDANCES IN WRONG ORDER, ', db_entry.affordance)
+            # tag_cv, encoded = P.from_data_to_cv(db_entry['tags'])
             to_insert[tagger_id][aff] = db_entry['data']
             # row_ctr += 1
         for tagger in to_insert:
@@ -380,7 +389,8 @@ class DB_Manager(object):
                 # print((d))
 
                 # arrayform = np.frombuffer(d, dtype=np.uint8)
-                conv = np.asarray(Image.open(io.BytesIO(d)).convert("L"), dtype=np.uint8)
+                conv = np.asarray(Image.open(
+                    io.BytesIO(d)).convert("L"), dtype=np.uint8)
                 # print(type(conv))
                 label_to_convert.append(conv)
 
@@ -388,8 +398,6 @@ class DB_Manager(object):
             pth = os.path.join(image_folder, f'{tagger}.npy')
             print(f'NUMPY SAVE: saving file: {pth}')
             np.save(os.path.join(image_folder, f'{tagger}.npy'), stacked_array)
-
-
 
     def init_tables(self):
         print('Making Tables')
@@ -605,8 +613,8 @@ class DB_Manager(object):
             return res
         return []
 
+    # INSERTION SQL
 
-    ####INSERTION SQL
     def insert_screenshot(self, kwargs):
         cmd = sql.SQL(
             """INSERT INTO screenshots(image_id, game, width, height, y_offset, x_offset, created_on, data, crop_l, crop_r, crop_t, crop_b, ui_x, ui_y, ui_height, ui_width)
@@ -668,15 +676,7 @@ class DB_Manager(object):
     def close(self):
         self.connection.close()
 
+
 if __name__ == '__main__':
-    print('ingesting')
     manage = DB_Manager()
-    print('manage made')
-    # manage.drop_all()
-    # print('dropped all')
-    # manage.init_tables()
-    # print('made all tables')
-    # manage.ingest_screenshots('sm3', '../tagger/eventgames/sm3/screenshots/')
-    # manage.ingest_tiles('sm3', '../tagger/eventgames/sm3/tiles/')
-    # print('ingested screenshtos and tiles, closing')
-    # manage.close()
+    print('DB Manager made')

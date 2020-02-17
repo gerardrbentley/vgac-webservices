@@ -114,13 +114,13 @@ single:
 #       -o UserKnownHostsFile=/dev/null \
 #       -o StrictHostKeyChecking=no  \
 #       ./static \
-#       faim@pom-itb-cs1.campus.pomona.edu:/data/faim
+#       faim@vgac.cs.pomona.edu:/data/faim
 #     echo 'Static files copied to /data/faim/static'
 #     scp -r -i $PRIVATE_KEY \
 #       -o UserKnownHostsFile=/dev/null \
 #       -o StrictHostKeyChecking=no  \
 #       ./nginx_config \
-#       faim@pom-itb-cs1.campus.pomona.edu:/data/faim
+#       faim@vgac.cs.pomona.edu:/data/faim
 #     echo 'Config files copied to /data/faim/nginx_config'
 
 
@@ -132,7 +132,7 @@ deploy-staging:
   image: bash
   environment:
     name: staging
-    url: https://pom-itb-cs1.campus.pomona.edu
+    url: https://vgac.cs.pomona.edu
   script: |
     apk update; apk add openssh-client
     chmod 600 $PRIVATE_KEY
@@ -140,9 +140,9 @@ deploy-staging:
       -o UserKnownHostsFile=/dev/null \
       -o StrictHostKeyChecking=no  \
       docker-compose.staging.yml \
-      faim@pom-itb-cs1.campus.pomona.edu:~/webservices/docker-compose.staging.yml
+      faim@vgac.cs.pomona.edu:~/webservices/docker-compose.staging.yml
     echo 'Docker-compose copied'
-    ssh faim@pom-itb-cs1.campus.pomona.edu \
+    ssh faim@vgac.cs.pomona.edu \
       -o UserKnownHostsFile=/dev/null \
       -o StrictHostKeyChecking=no \
       -i $PRIVATE_KEY "
@@ -180,7 +180,7 @@ deploy-prod:
       when: manual
   environment:
     name: production
-    url: https://pom-itb-cs1.campus.pomona.edu
+    url: https://vgac.cs.pomona.edu
   image: bash
   script: |
     apk update; apk add openssh-client
@@ -189,9 +189,9 @@ deploy-prod:
       -o UserKnownHostsFile=/dev/null \
       -o StrictHostKeyChecking=no  \
       docker-compose.yml \
-      faim@pom-itb-cs1.campus.pomona.edu:~/webservices/docker-compose.yml
+      faim@vgac.cs.pomona.edu:~/webservices/docker-compose.yml
     echo 'Docker-compose copied'
-    ssh faim@pom-itb-cs1.campus.pomona.edu \
+    ssh faim@vgac.cs.pomona.edu \
       -o UserKnownHostsFile=/dev/null \
       -o StrictHostKeyChecking=no \
       -i $PRIVATE_KEY "
