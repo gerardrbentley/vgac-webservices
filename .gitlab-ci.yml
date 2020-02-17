@@ -147,8 +147,7 @@ deploy-staging:
       -i $PRIVATE_KEY "
      cd /webservices
      echo 'Docker login'
-     echo "$CI_JOB_TOKEN ; $CI_REGISTRY ; $CI_REGISTRY_USER"
-     docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY || exit 1
+     docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY || exit 1
      echo 'Pull images'
      DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
      REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
@@ -197,8 +196,7 @@ deploy-prod:
       -i $PRIVATE_KEY "
      cd /webservices
      echo 'Docker login'
-     echo "$CI_JOB_TOKEN ; $CI_REGISTRY ; $CI_REGISTRY_USER"
-     docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY || exit 1
+     docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY || exit 1
      echo 'Pull images'
      DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
      REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
