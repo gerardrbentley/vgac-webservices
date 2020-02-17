@@ -23,17 +23,21 @@ AFFORDANCES = []
 NUM_AFFORDANCES = 10
 IMAGE_BASE = "data:image/png;base64,{}"
 
+
 def err_with_logger(request, the_logger, err_str):
     the_logger.error(err_str)
     request.setResponseCode(500)
     # return Redirect(b'/500.html')
     return json.dumps({'status': 500, 'message': err_str})
 
+
 def dict_decode(bytes_keys_values):
-    return {k.decode('utf-8'):list(map(lambda x: x.decode('utf-8'), v)) for (k,v) in bytes_keys_values.items()}
+    return {k.decode('utf-8'): list(map(lambda x: x.decode('utf-8'), v)) for (k, v) in bytes_keys_values.items()}
+
 
 def b64_string(data):
     return IMAGE_BASE.format((base64.b64encode(data)).decode('utf-8'))
+
 
 def mse(a, b):
     if a.shape != b.shape:
@@ -43,8 +47,10 @@ def mse(a, b):
     total_diff = np.sum(diffs)
     return np.divide(total_diff, (a.shape[0] * a.shape[1]))
 
+
 def point_on_grid(c, r, cols, rows):
     return c in cols and r in rows
+
 
 def grid_using_crop(width, height, grid_size=8, grid_offset_x=0, grid_offset_y=0, crop_l=0, crop_r=0, crop_t=0, crop_b=0):
     row_num = (height - crop_t - crop_b) // grid_size
@@ -63,6 +69,7 @@ def grid_using_crop(width, height, grid_size=8, grid_offset_x=0, grid_offset_y=0
 
     return rows, cols
 
+
 def unbuffer_and_decode(image_bytes):
     try:
         print('unbuffering {type(image_bytes)}')
@@ -73,6 +80,7 @@ def unbuffer_and_decode(image_bytes):
     except:
         return defer.fail()
     return defer.succeed(image)
+
 
 @inlineCallbacks
 def unique_tiles_using_meta(image, y_offset=0, x_offset=0, width=256, height=224, crop_l=0, crop_r=0, crop_t=0, crop_b=0, ui_x=0, ui_y=0, ui_height=0, ui_width=0):
@@ -113,7 +121,7 @@ def unique_tiles_using_meta(image, y_offset=0, x_offset=0, width=256, height=224
                 for i in range(len(matches)):
                     y, x = matches[i]
                     matches_dict['location_{}'.format(i)] = {
-                                                      'x': int(x), 'y': int(y)}
+                        'x': int(x), 'y': int(y)}
                 if len(matches) != 0:
                     for match_loc in matches:
                         visited_locations.append(match_loc)
@@ -124,7 +132,7 @@ def unique_tiles_using_meta(image, y_offset=0, x_offset=0, width=256, height=224
                 img_tiles.append({
                     'tile_data': b64_string(data),
                     'locations': matches_dict
-                    })
+                })
                 tile_ctr += 1
             else:
                 skip_ctr += 1
@@ -133,6 +141,7 @@ def unique_tiles_using_meta(image, y_offset=0, x_offset=0, width=256, height=224
         len(visited_locations), len(img_tiles), skip_ctr, (len(img_tiles)+skip_ctr)))
     # print(img_tiles[0]['tile_data'].shape)
     return img_tiles
+
 
 def get_tile_ids(unique_tiles, known_tiles):
     tiles_to_tag = {}
@@ -154,7 +163,7 @@ def get_tile_ids(unique_tiles, known_tiles):
                         'tile_id': tile_info['tile_id'],
                         'tile_data': to_compare,
                         'locations': screenshot_tile['locations']
-                        }
+                    }
                     break
             if not is_in_db:
                 miss_ctr += 1
@@ -162,7 +171,7 @@ def get_tile_ids(unique_tiles, known_tiles):
                     'tile_id': -1,
                     'tile_data': to_compare,
                     'locations': screenshot_tile['locations']
-                    }
+                }
     except:
         return defer.fail()
     # print('done')
@@ -171,37 +180,39 @@ def get_tile_ids(unique_tiles, known_tiles):
     # print('wtf')
     return defer.succeed(tiles_to_tag)
 
+
+def succConnectionPool(conn):
+    pid = conn.get_backend_pid()
+    print("New DB connection created (backend PID {})".format(pid))
+
+
 class VGAC_Database(object):
 
-    def succConnectionPool(conn):
-        pid = conn.get_backend_pid()
-        print("New DB connection created (backend PID {})".format(pid))
+    def __init__(self):
+        self.deployment = str(os.getenv('TARGET', 'dev'))
+        self.POSTGRES_HOST = 'vgac-db'
+        if self.deployment == 'staging':
+            self.POSTGRES_HOST = 'vgac-db-staging'
+        elif self.deployment == 'test':
+            self.POSTGRES_HOST = 'vgac-db-test'
 
-    deployment = str(os.getenv('TARGET', 'dev'))
-    if deployment == 'staging':
-        print('from staging dbapi')
-        postgres_host = 'vgac-db-staging'
-    else:
-        postgres_host = 'vgac-db'
-        print('from live dbapi')
+        keys = {
+            'host': self.POSTGRES_HOST,
+            'port': os.getenv('POSTGRES_PORT', '5432'),
+            'database': os.getenv('POSTGRES_DB', 'affordances_db'),
+            'user': os.getenv('POSTGRES_USER', 'faim_lab'),
+            'password': os.getenv('POSTGRES_PASSWORD', 'dev'),
+        }
 
-    keys = {
-        'host': postgres_host,
-        'port': os.getenv('POSTGRES_PORT', '5432'),
-        'database': os.getenv('POSTGRES_DB', 'affordances_db'),
-        'user': os.getenv('POSTGRES_USER', 'faim_lab'),
-        'password': os.getenv('POSTGRES_PASSWORD', 'dev'),
-    }
-
-    dbpool = adbapi.ConnectionPool('psycopg2',
-                                    cp_min = 3,
-                                    cp_max = 10,
-                                    cp_noisy = True,
-                                    cp_openfun = succConnectionPool,
-                                    cp_reconnect = True,
-                                    cp_good_sql = "SELECT 1",
-                                    cursor_factory = DictCursor,
-                                    **keys)
+        self.dbpool = adbapi.ConnectionPool('psycopg2',
+                                            cp_min=3,
+                                            cp_max=10,
+                                            cp_noisy=True,
+                                            cp_openfun=succConnectionPool,
+                                            cp_reconnect=True,
+                                            cp_good_sql="SELECT 1",
+                                            cursor_factory=DictCursor,
+                                            **keys)
 
     def insert_screenshot_tag(self, kwargs):
         cmd = sql.SQL(
@@ -262,7 +273,7 @@ class VGAC_Database(object):
             LIMIT 1;
             """
         )
-        return self.dbpool.runQuery(cmd, {"tagger":tagger_id})
+        return self.dbpool.runQuery(cmd, {"tagger": tagger_id})
 
     def get_resource_by_id(self, table='default', col='default', resource_id='default'):
         cmd = sql.SQL(
@@ -270,7 +281,7 @@ class VGAC_Database(object):
             WHERE {} = %(resource_id)s;
             """
         ).format(sql.Identifier(table), sql.Identifier(col))
-        return self.dbpool.runQuery(cmd, {"resource_id":resource_id})
+        return self.dbpool.runQuery(cmd, {"resource_id": resource_id})
 
     def get_screenshot_affordances(self, image_id='default'):
         cmd = sql.SQL(
@@ -278,7 +289,7 @@ class VGAC_Database(object):
             WHERE image_id = %(image_id)s ORDER BY tagger_id, affordance;
             """
         )
-        return self.dbpool.runQuery(cmd, {"image_id":image_id})
+        return self.dbpool.runQuery(cmd, {"image_id": image_id})
 
     def get_game_names(self):
         cmd = sql.SQL(
@@ -293,7 +304,7 @@ class VGAC_Database(object):
             WHERE tile_id = %(tile_id)s;
             """
         )
-        return self.dbpool.runQuery(cmd, {"tile_id":tile_id})
+        return self.dbpool.runQuery(cmd, {"tile_id": tile_id})
 
     def get_screenshots_by_game(self, game='default'):
         cmd = sql.SQL(
@@ -301,7 +312,7 @@ class VGAC_Database(object):
             WHERE game = %(game)s;
             """
         )
-        return self.dbpool.runQuery(cmd, {"game":game})
+        return self.dbpool.runQuery(cmd, {"game": game})
 
     def get_tiles_by_game(self, game='default'):
         cmd = sql.SQL(
@@ -309,8 +320,7 @@ class VGAC_Database(object):
             WHERE game = %(game)s;
             """
         )
-        return self.dbpool.runQuery(cmd, {"game":game})
-
+        return self.dbpool.runQuery(cmd, {"game": game})
 
     def get_sprites_by_game(self, game='default'):
         cmd = sql.SQL(
@@ -318,23 +328,21 @@ class VGAC_Database(object):
             WHERE game = %(game)s;
             """
         )
-        return self.dbpool.runQuery(cmd, {"game":game})
-
+        return self.dbpool.runQuery(cmd, {"game": game})
 
     def check_uuid_in_table(self, table='default', id='default'):
         cmd = sql.SQL(
             """SELECT EXISTS(SELECT 1 FROM {} where image_id = %(id)s) as "exists"
             """
         ).format(sql.Identifier(table))
-        return self.dbpool.runQuery(cmd, {"id":id})
-
+        return self.dbpool.runQuery(cmd, {"id": id})
 
     def check_tagger_tagged_screenshot(self, image_id='defalut', tagger_id='default'):
         cmd = sql.SQL(
             """SELECT EXISTS(SELECT 1 FROM screenshot_tags where image_id = %(image_id)s and tagger_id = %(tagger_id)s) as "exists"
             """
         )
-        return self.dbpool.runQuery(cmd, {"image_id":image_id, "tagger_id":tagger_id})
+        return self.dbpool.runQuery(cmd, {"image_id": image_id, "tagger_id": tagger_id})
 
 
 class VGAC_DBAPI(object):
@@ -347,7 +355,11 @@ class VGAC_DBAPI(object):
         self.POSTGRES_HOST = 'vgac-db'
         if self.deployment == 'staging':
             self.POSTGRES_HOST = 'vgac-db-staging'
-        self.log.info(f'DB API on {self.deployment} running, database connection: {self.POSTGRES_HOST}')
+        elif self.deployment == 'test':
+            self.POSTGRES_HOST = 'vgac-db-test'
+
+        self.log.info(
+            f'DB API on {self.deployment} running, database connection: {self.POSTGRES_HOST}')
 
     #--------- Debug ----------#
     @app.route('/test')
@@ -360,7 +372,7 @@ class VGAC_DBAPI(object):
     def not_found_handler(self, request, failure):
         request.setResponseCode(404)
         return Redirect(b'/404.html')
-        
+
     @app.handle_errors
     def error_handler(self, request, failure):
         request.setResponseCode(500)
@@ -379,14 +391,14 @@ class VGAC_DBAPI(object):
             data = json.loads(request.content.read())
         except:
             return err_with_logger(request, self.log, f'Bad JSON from POST request')
-        
+
         tagger_id = data.get('tagger_id', None)
         image_id = data.get('image_id', None)
         if tagger_id is None:
             return err_with_logger(request, self.log, f'Bad tagger id or image id from POST request')
-        
+
         self.log.info(f'RECEIVED TAGS FROM: {tagger_id} FOR IMAGE: {image_id}')
-        
+
         # We use [] instead of None to just ignore the iteration, don't have to handle error
         tiles = (data.get('tiles', []))
         try:
@@ -464,19 +476,19 @@ class VGAC_DBAPI(object):
             image_id = record['image_id']
             game = record['game']
             meta = {
-                    'width': record['width'],
-                    'height': record['height'],
-                    'y_offset': record['y_offset'],
-                    'x_offset': record['x_offset'],
-                    'crop_l': record['crop_l'],
-                    'crop_r': record['crop_r'],
-                    'crop_b': record['crop_b'],
-                    'crop_t': record['crop_t'],
-                    'ui_x': record['ui_x'],
-                    'ui_y': record['ui_y'],
-                    'ui_width': record['ui_width'],
-                    'ui_height': record['ui_height'],
-                }
+                'width': record['width'],
+                'height': record['height'],
+                'y_offset': record['y_offset'],
+                'x_offset': record['x_offset'],
+                'crop_l': record['crop_l'],
+                'crop_r': record['crop_r'],
+                'crop_b': record['crop_b'],
+                'crop_t': record['crop_t'],
+                'ui_x': record['ui_x'],
+                'ui_y': record['ui_y'],
+                'ui_width': record['ui_width'],
+                'ui_height': record['ui_height'],
+            }
         except:
             return err_with_logger(request, self.log, 'Bad Screenshot JSON or meta')
 
@@ -492,8 +504,8 @@ class VGAC_DBAPI(object):
             known_game_tiles = []
             for record in game_tile_data:
                 mapper = {
-                        'tile_id': record['tile_id'],
-                    }
+                    'tile_id': record['tile_id'],
+                }
                 data = record['data']
                 strf = b64_string(data)
                 mapper['data'] = strf
@@ -502,7 +514,7 @@ class VGAC_DBAPI(object):
             out_tiles = yield get_tile_ids(unique_tiles, known_game_tiles)
         except:
             return err_with_logger(request, self.log, 'Failed to match tiles for ids')
-        
+
         request.setHeader('Content-Type', 'application/json')
         return json.dumps(out_tiles)
 
@@ -510,10 +522,10 @@ class VGAC_DBAPI(object):
     @inlineCallbacks
     def tileById(self, request, tile_id):
         try:
-            d = yield self.db.get_resource_by_id(table='tiles',col='tile_id', resource_id=tile_id)
+            d = yield self.db.get_resource_by_id(table='tiles', col='tile_id', resource_id=tile_id)
         except:
             return err_with_logger(self.log, request, 'Failed to Query DB')
-        try:    
+        try:
             d = yield self.tileJSON(d)
         except:
             return err_with_logger(self.log, request, 'Bad JSON from db for tiles')
@@ -528,7 +540,7 @@ class VGAC_DBAPI(object):
             d = yield self.db.get_tile_affordances(tile_id=tile_id)
         except:
             return err_with_logger(self.log, request, 'Failed to Query DB')
-        try:    
+        try:
             d = yield self.tile_affordanceJSON(d)
         except:
             return err_with_logger(self.log, request, 'Bad JSON from db for tiles')
@@ -546,7 +558,7 @@ class VGAC_DBAPI(object):
             d = yield self.db.get_tiles_by_game(game_name)
         except:
             return err_with_logger(self.log, request, 'Failed to Query DB')
-        try:    
+        try:
             d = yield self.tileJSON(d)
         except:
             return err_with_logger(self.log, request, 'Bad JSON from db for tiles')
@@ -590,7 +602,7 @@ class VGAC_DBAPI(object):
         log_str = f'Inserted {insert_count} Tile Tags. SKIPPED {skip_count} Tiles. SUBMITTED: {len(tiles)}'
         # self.log.info(log_str)
         return log_str
-    
+
     @inlineCallbacks
     def screenshot_tags_to_db(self, tag_images, image_id, tagger_id):
         count = 0
@@ -615,11 +627,12 @@ class VGAC_DBAPI(object):
                         'dt': datetime.now(),
                     }
                     # self.log.info(f'to insert: {to_insert}')
-                    
+
                     yield self.db.insert_screenshot_tag(to_insert)
                     count += 1
                 else:
-                    self.log.error(f'Wrong Data tag on {affordance} b64 prefix: {data_tag}')
+                    self.log.error(
+                        f'Wrong Data tag on {affordance} b64 prefix: {data_tag}')
                     return defer.fail()
             except:
                 return defer.fail()
@@ -631,26 +644,23 @@ class VGAC_DBAPI(object):
         try:
             responseJSON = []
             for record in results:
-                # self.log.info(record)
                 mapper = {
-                        'image_id': record['image_id'],
-                        'game': record['game'],
-                        'width': record['width'],
-                        'height': record['height'],
-                        'y_offset': record['y_offset'],
-                        'x_offset': record['x_offset'],
-                        'crop_l': record['crop_l'],
-                        'crop_r': record['crop_r'],
-                        'crop_b': record['crop_b'],
-                        'crop_t': record['crop_t'],
-                        'ui_x': record['ui_x'],
-                        'ui_y': record['ui_y'],
-                        'ui_width': record['ui_width'],
-                        'ui_height': record['ui_height'],
-                    }
+                    'image_id': record['image_id'],
+                    'game': record['game'],
+                    'width': record['width'],
+                    'height': record['height'],
+                    'y_offset': record['y_offset'],
+                    'x_offset': record['x_offset'],
+                    'crop_l': record['crop_l'],
+                    'crop_r': record['crop_r'],
+                    'crop_b': record['crop_b'],
+                    'crop_t': record['crop_t'],
+                    'ui_x': record['ui_x'],
+                    'ui_y': record['ui_y'],
+                    'ui_width': record['ui_width'],
+                    'ui_height': record['ui_height'],
+                }
                 data = record['data']
-                # enc = base64.b64encode(data)
-                # strf = enc.decode('utf-8')
                 strf = b64_string(data)
                 mapper['data'] = strf
                 responseJSON.append(mapper)
@@ -663,16 +673,13 @@ class VGAC_DBAPI(object):
             responseJSON = []
             for record in results:
                 mapper = {
-                        'image_id': record['image_id'],
-                        'affordance': record['affordance'],
-                        'tagger_id': record['tagger_id'],
-                    }
+                    'image_id': record['image_id'],
+                    'affordance': record['affordance'],
+                    'tagger_id': record['tagger_id'],
+                }
                 data = record['data']
-                # enc = base64.b64encode(data)
-                # strf = enc.decode('utf-8')
                 strf = b64_string(data)
                 mapper['data'] = strf
-                # if record['affordance'] == 'solid':
                 responseJSON.append(mapper)
         except:
             return defer.fail()
@@ -683,22 +690,19 @@ class VGAC_DBAPI(object):
             responseJSON = []
             for record in results:
                 mapper = {
-                        'tile_id': record['tile_id'],
-                        'game': record['game'],
-                        'width': record['width'],
-                        'height': record['height'],
-                    }
+                    'tile_id': record['tile_id'],
+                    'game': record['game'],
+                    'width': record['width'],
+                    'height': record['height'],
+                }
                 data = record['data']
-                # enc = base64.b64encode(data)
-                # strf = enc.decode('utf-8')
                 strf = b64_string(data)
                 mapper['data'] = strf
-                # if record['affordance'] == 'solid':
                 responseJSON.append(mapper)
         except:
             return defer.fail()
         return json.dumps(responseJSON)
-    
+
     def tile_affordanceJSON(self, results):
         try:
             responseJSON = []
@@ -722,27 +726,6 @@ class VGAC_DBAPI(object):
             return defer.fail()
         return json.dumps(responseJSON)
 
-    def tile_locationJSON(self, results):
-        try:
-            return json.dumps(results)
-            # responseJSON = []
-            # for record in results:
-            #     mapper = {
-            #             'tile_id': record['tile_id'],
-            #             'game': record['game'],
-            #             'width': record['width'],
-            #             'height': record['height'],
-            #         }
-            #     data = record['data']
-            #     # enc = base64.b64encode(data)
-            #     # strf = enc.decode('utf-8')
-            #     strf = b64_string(data)
-            #     mapper['data'] = strf
-            #     # if record['affordance'] == 'solid':
-            #     responseJSON.append(mapper)
-        except:
-            return defer.fail()
-        # return json.dumps(responseJSON)
 
 if __name__ == '__main__':
     webapp = VGAC_DBAPI()
