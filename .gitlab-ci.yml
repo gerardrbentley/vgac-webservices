@@ -29,7 +29,7 @@ reverse_proxy:
   script:
     - pwd
 #    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - echo "{\"auths\":{\"$DOCKER_HUB\":{\"username\":\"gerardrbentley\",\"password\":\"$GERARD_DOCKER_TOKEN\"}}}" > /kaniko/.docker/config.json
+    - echo "{\"auths\":{\"index.docker.io/v1/\":{\"username\":\"gerardrbentley\",\"password\":\"$GERARD_DOCKER_TOKEN\"}}}" > /kaniko/.docker/config.json
     # - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile-faim-nginx --destination $REVERSE_PROXY_IMAGE_TAG
   stage: build_proxy
@@ -46,7 +46,7 @@ vgac_dbapi:
   script:
     - cd dbapi
 #    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - echo "{\"auths\":{\"$DOCKER_HUB\":{\"username\":\"gerardrbentley\",\"password\":\"$GERARD_DOCKER_TOKEN\"}}}" > /kaniko/.docker/config.json
+    - echo "{\"auths\":{\"index.docker.io/v1/\":{\"username\":\"gerardrbentley\",\"password\":\"$GERARD_DOCKER_TOKEN\"}}}" > /kaniko/.docker/config.json
     # - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
     - /kaniko/executor --context $CI_PROJECT_DIR/dbapi --dockerfile $CI_PROJECT_DIR/dbapi/Dockerfile-dbapi --destination $DBAPI_IMAGE_TAG
   stage: build_api
@@ -63,7 +63,7 @@ db_manager:
   script:
     - cd db_manager
 #    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - echo "{\"auths\":{\"$DOCKER_HUB\":{\"username\":\"gerardrbentley\",\"password\":\"$GERARD_DOCKER_TOKEN\"}}}" > /kaniko/.docker/config.json
+    - echo "{\"auths\":{\"index.docker.io/v1/\":{\"username\":\"gerardrbentley\",\"password\":\"$GERARD_DOCKER_TOKEN\"}}}" > /kaniko/.docker/config.json
     # - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
     - /kaniko/executor --context $CI_PROJECT_DIR/db_manager --dockerfile $CI_PROJECT_DIR/db_manager/Dockerfile-db-manager --destination $DB_MANAGER_IMAGE_TAG
   stage: build_manager
