@@ -269,8 +269,9 @@ function fetch_data(){
       console.log('output w/ tagger')
       console.log(output)
       //console.log(act_tile);
+      update_tile()
   });
-  setTimeout(function() {update_tile()}, 200);
+//   setTimeout(function() {update_tile()}, 200);
 }
 
 
