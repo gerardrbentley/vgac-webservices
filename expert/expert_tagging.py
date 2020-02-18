@@ -10,18 +10,6 @@ import os
 import base64
 
 
-def fetch_json_with_logger(the_logger, url, params=None):
-    try:
-        output = yield treq.get(url, params)
-    except:
-        return err_with_logger(the_logger, f'Fetch at {url} failed')
-    try:
-        output = yield output.json()
-    except:
-        return err_with_logger(the_logger, f'Bad json from {url}')
-    return output
-
-
 def err_with_logger(the_logger, err_str):
     the_logger.error(err_str)
     return json.dumps({'output': {'status': 500, 'message': err_str}})
@@ -87,14 +75,14 @@ class ExpertTagger(object):
         except:
             return err_with_logger(self.log, f'Fetch at {self.BASE_URL}/screenshots/{image_id}/tiles failed')
         try:
-            tiles_to_tag = yield unique_tiles.json()
+            textures_to_tag = yield unique_tiles.json()
         except:
             return err_with_logger(self.log, f'Bad json from {self.BASE_URL}/screenshots/{image_id}/tiles')
 
         output = {
             'image': image_data['data'],
             'image_id': image_id,
-            'tiles': tiles_to_tag,
+            'textures': textures_to_tag,
             'y_offset': image_data['y_offset'],
             'x_offset': image_data['x_offset']
         }

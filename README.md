@@ -52,7 +52,7 @@ keys = {'host': os.getenv('POSTGRES_HOST', 'vgac-db'),
 
 The following mount locations (-v) will work if you have a dataset folder in your current directory (path result of `pwd`), otherwise use absolute path to folder
 ```
-docker run -it --network=vgac-network -v "$(pwd)/testfolder/games":/app/games:z -v "$(pwd)/testfolder/out_data":/app/out_dataset:z db-manager
+docker run -it --network=vgac-network -v "$(pwd)/test/testdata":/app/games:z db-manager
 ```
 The following command is relevant to server on vgac.cs.pomona.edu updating production database
 ```
