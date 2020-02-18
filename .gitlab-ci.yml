@@ -157,6 +157,7 @@ deploy-staging:
      DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
      REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
      EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
+     SINGLE_TILE_IMAGE=$SINGLE_TILE_IMAGE_TAG \
        docker-compose -f docker-compose.staging.yml pull
      echo 'Pull db manager (not in compose)'
      docker pull $DB_MANAGER_IMAGE_TAG
@@ -207,6 +208,7 @@ deploy-prod:
      REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
      DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
      EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
+     SINGLE_TILE_IMAGE=$SINGLE_TILE_IMAGE_TAG \
        docker-compose pull
      echo 'Pull db manager (not in compose)'
      docker pull $DB_MANAGER_IMAGE_TAG
