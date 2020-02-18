@@ -1,0 +1,14 @@
+FROM postman/newman:alpine
+
+RUN npm i -g newman-reporter-html && \
+    npm i -g newman-reporter-htmlextra
+
+COPY ./testdata/ /app/games/
+
+COPY ./postman_environments/* /etc/newman/
+
+COPY ./*.postman_collection.json /etc/newman/
+
+WORKDIR /etc/newman
+
+ENTRYPOINT ["newman"]
