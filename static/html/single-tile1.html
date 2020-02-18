@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+
+    <title>Video Game Affordanes</title>
+    <meta name="description" content="The HTML5 Herald">
+    <meta name="author" content="SitePoint">
+
+    <link rel="stylesheet" href="css/style.css?v=1.0">
+    <script src = 'https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js' ></script>
+</head>
+
+<body>
+        <link href="/css/single-tile1.css" rel="stylesheet">
+    </div>
+
+    <link href="https://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <div class="col-md-12">
+        <div class="info">
+        <i class="icon-info-sign"></i>
+        <span style = "font-size:36px;cursor:pointer; position: absolute; top: -11px; left:-5px; z-index: -1;"> &#9898;</span>
+        <span class="extra-info">
+            1. Click on all categories that apply to the tile in the middle of the page. <br/>
+            2. Click "context" if you want to see this tile in a bigger image. <br/>
+            3. Click on "reset" if you made a mistake selecting. It will reset all your selections.<br/>
+            4. Click on "comment" if none of the categories apply. THen you will be able to type your own category.<br/>
+            5. Click on "save" once you are done with selection.<br/>
+            6. You can access instruction menu anytime by hovering on "I" icon right to "context" button.<br/>
+        </span>
+        </div><br/>
+        
+    </div>
+
+
+    <div id="mySidenav" class="sidenav">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+        <a href="#">About</a> <!--add webpages here instead of hashtag-->
+        <a href="#">Services</a>
+        <a href="#">Contact</a>
+    </div>
+      
+    <span style="font-size:62px;cursor:pointer; position: absolute; top: 30px; left: 10px; width: 5%; color: #ffffff;" onclick="openNav()">☰</span>
+
+
+    <div id="myInstructions" class="instr">
+        <a href="javascript:void(0)" class="closebtn_i" onclick="closeInstr()">&times;</a>
+        <h2 align="center" style="color: white; position:relative; top:-40px; font-size:50px;">Instructions</h2>
+        <p align="left" style="color: white; position:relative; left:200px; font-size:20px">1. Click on all categories that apply to the tile in the middle of the page.</p>
+        <p align="left" style="color: white; position:relative; left:200px; font-size:20px">2. Click "context" if you want to see this tile in a bigger image.</p>
+        <p align="left" style="color: white; position:relative; left:200px; font-size:20px">3. Click on "reset" if you made a mistake selecting. It will reset all your selections.</p>
+        <p align="left" style="color: white; position:relative; left:200px; font-size:20px">4. Click on "comment" if none of the categories apply. THen you will be able to type your own category.</p>
+        <p align="left" style="color: white; position:relative; left:200px; font-size:20px">5. Click on "save" once you are done with selection.</p>
+        <p align="left" style="color: white; position:relative; left:200px; font-size:20px">6. You can access instruction menu anytime by hovering on "I" icon right to "context" button.</p>
+      </div>
+
+
+    <img id ="avatar" src="/fml1.png" height="590" width = "590">
+    
+    <div id = "title0" class = "container1">
+            <img id = "pic1" src = "/stt3.png"> 
+    </div> 
+
+    <div id = "circle"></div>
+
+    <div id = "title1" class = "container1">
+        <img id = "pic2" src = "/stt1.png"> 
+    </div>
+
+    <div id = "current_tile" class = "container">
+        <img id = "tile_now" src = "/example.png">
+    </div> 
+    <div id = "buttons">
+        <input id = "b_solid" type = "button" value = "solid">
+        
+        <input id = "b_movable" type = "button" value = "movable">
+        <input id = "b_destroyable" type = "button" value = "destroyable">
+        <input id = "b_dangerous" type = "button" value = "dangerous">
+        <input id = "b_gettable" type = "button" value = "gettable">
+        <input id = "b_portal" type = "button" value = "portal">
+        <input id = "b_usable" type = "button" value = "usable">
+        <input id = "b_changeable" type = "button" value = "changeable">
+        <input id = "b_ui" type = "button" value = "ui">
+        <input id = "b_permeable" type = "button" value = "permeable">
+        <input id = "b_save" type = "button" value = "save">
+        <input id = "b_comment" type = "button" value = "comment">
+        <input id = "b_context" type = "button" value = "context">
+        <input id = "b_reset" type = "button" value = "reset">
+    </div>
+    
+    <div id="drawing_container" class = "dr_container">  
+        <img id = "drawer" src="/screenshot.png" width="768" height="672">   
+        <canvas id = "myCanvas_drawing" width="768" height="672"
+            cssstyle="border:1px solid #000000">
+        </canvas>
+        <div class = "button_close">
+                <input id = "bClose" type = "button" value = "close">
+        </div>
+    </div>
+
+    <script src="js/single-tile1.js"></script>
+</body>
+
+</html>
