@@ -26,11 +26,11 @@ class SingleTileTagger(object):
         self.DATABASE_URL = 'http://dbapi:5000'
         if self.deployment == 'staging':
             self.DATABASE_URL = 'http://dbapi-staging:5000'
-        self.log.info(f'Expert Tagger on {self.deployment} running, dbapi: {self.DATABASE_URL}')
+        self.log.info(f'Single Tile Tagger on {self.deployment} running, dbapi: {self.DATABASE_URL}')
 
     #--------- Debug ----------#
     @app.route("/test")
-    def test(self, request):
+    def test_route(self, request):
         return json.dumps({'message': f'single tile test from {self.deployment}'})
 
     @app.route("/testhtml")
@@ -38,7 +38,7 @@ class SingleTileTagger(object):
         return File('./single_tile_page.html')
 
     @app.route("/testjs")
-    def testhtml(self, request):
+    def testjs(self, request):
         return File('./single_tile.js')
 
     @app.route("/")
@@ -59,9 +59,9 @@ class SingleTileTagger(object):
         self.log.info(f'Fetching for {tagger_id}: Single Tile Tagger on {self.deployment}, dbapi: {self.DATABASE_URL}')
 
         try:
-            image_data = yield treq.get(self.DATABASE_URL+'/screenshot', params={'tagger': tagger_id})
+            image_data = yield treq.get(self.DATABASE_URL+'/screenshots', params={'tagger': tagger_id})
         except:
-            return err_with_logger(self.log, f'Fetch at {self.DATABASE_URL}/screenshot failed')
+            return err_with_logger(self.log, f'Fetch at {self.DATABASE_URL}/screenshots failed')
         try:
             image_data = yield image_data.json()
             self.log.info(f'image data type: {type(image_data)}')
@@ -69,7 +69,7 @@ class SingleTileTagger(object):
                 self.log.info(f'image data keys: {list(image_data.keys())}')
             image_data = image_data[0]
         except:
-            return err_with_logger(self.log, f'Bad json from {self.DATABASE_URL}/screenshot')
+            return err_with_logger(self.log, f'Bad json from {self.DATABASE_URL}/screenshots')
         
         self.log.info(f'image data type: {type(image_data)}')
         if isinstance(image_data, dict):
@@ -79,7 +79,7 @@ class SingleTileTagger(object):
 
         self.log.info(f'Fetching tiles for image: {image_id}')
         try:
-            unique_tiles = yield treq.get(self.DATABASE_URL+'/screenshot_tiles/'+image_id)
+            unique_tiles = yield treq.get(f'{self.DATABASE_URL}/screenshots/{image_id}/tiles')
         except:
             return err_with_logger(self.log, f'Fetch at {self.DATABASE_URL}/screenshot_tiles/{image_id} failed')
         try:
