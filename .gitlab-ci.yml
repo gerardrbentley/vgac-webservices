@@ -68,39 +68,39 @@ db_manager:
     - /kaniko/executor --context $CI_PROJECT_DIR/db_manager --dockerfile $CI_PROJECT_DIR/db_manager/Dockerfile-db-manager --destination $DB_MANAGER_IMAGE_TAG
   stage: build_manager
 
-# expert:
-#   rules:
-#     - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "production"'
-#       changes:
-#       - expert/**/*
-#       when: always
-#   image:
-#     name: gcr.io/kaniko-project/executor:debug
-#     entrypoint: [""]
-#   script:
-#     - cd expert
-# #    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-#     - echo "{\"auths\":{\"$DOCKER_HUB\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-#     - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
-#     - /kaniko/executor --context $CI_PROJECT_DIR/expert --dockerfile $CI_PROJECT_DIR/expert/Dockerfile-expert --destination $EXPERT_IMAGE_TAG
-#   stage: build_expert
+expert:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "production"'
+      changes:
+      - expert/**/*
+      when: always
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - cd expert
+#    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - echo "{\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"$GERARD_DOCKER_AUTH\"}}}" > /kaniko/.docker/config.json
+    # - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
+    - /kaniko/executor --context $CI_PROJECT_DIR/expert --dockerfile $CI_PROJECT_DIR/expert/Dockerfile-expert --destination $EXPERT_IMAGE_TAG
+  stage: build_expert
  
-# single:
-#   rules:
-#     - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "production"'
-#       changes:
-#       - single_tile_tagging/**/*
-#       when: always
-#   image:
-#     name: gcr.io/kaniko-project/executor:debug
-#     entrypoint: [""]
-#   script:
-#     - cd single_tile_tagging
-# #    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-#     - echo "{\"auths\":{\"$DOCKER_HUB\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-#     - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
-#     - /kaniko/executor --context $CI_PROJECT_DIR/single_tile_tagging --dockerfile $CI_PROJECT_DIR/single_tile_tagging/Dockerfile-single-tile --destination $SINGLE_TILE_IMAGE_TAG
-#   stage: build_single
+single:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "production"'
+      changes:
+      - single_tile_tagging/**/*
+      when: always
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - cd single_tile_tagging
+#    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - echo "{\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"$GERARD_DOCKER_AUTH\"}}}" > /kaniko/.docker/config.json
+    # - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
+    - /kaniko/executor --context $CI_PROJECT_DIR/single_tile_tagging --dockerfile $CI_PROJECT_DIR/single_tile_tagging/Dockerfile-single-tile --destination $SINGLE_TILE_IMAGE_TAG
+  stage: build_single
 
 # net_update:
 #   stage: update_nginx
