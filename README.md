@@ -89,10 +89,22 @@ for updating db_manager, it should be rebuilt (unless in image store CI). Gets r
 docker build -t db-manager -f Dockerfile-db-manager ./db_manager
 ```
 
-## CS1
+
+## VGAC.CS.POMONA
 ### Adding game data
 ```
-scp -r -i ~/.ssh/PRIVATE_KEY ./games faim@pom-itb-cs1.campus.pomona.edu:/data/faim
+scp -r -i ~/.ssh/PRIVATE_KEY ./games username@vgac.cs.pomona.edu:/webservices
+```
+
+## Database
+```
+docker exec -it vgac-db psql -U faim_lab -d affordances_db
+```
+
+Postgres Database can be spun up in its own docker container. For persistent storage, volume is mounted to host system. For easier connection to other docker containers and not revealing ports to world it is named and on the network. Otherwise started with base docker-compose.
+
+```
+docker run -d --name vgac-db -e POSTGRES_USER postgres -e POSTGRES_DB postgres --network=vgac-network -v ./tmp_postgres=/var/lib/postgresql/data
 ```
 
 ## VGAC.CS.POMONA
