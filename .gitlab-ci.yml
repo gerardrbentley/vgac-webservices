@@ -124,7 +124,7 @@ deploy-staging:
       -o UserKnownHostsFile=/dev/null \
       -o StrictHostKeyChecking=no  \
       -r \
-      static/ \
+      static/* \
       faim@vgac.cs.pomona.edu:$STAGING_DIR
     echo 'Staging static files copied to $STAGING_DIR'
     ssh faim@vgac.cs.pomona.edu \
