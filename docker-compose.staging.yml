@@ -1,35 +1,36 @@
 version: '3.5'
 
 services:
-  reverse-proxy-staging:
+  reverse-proxy:
     restart: unless-stopped 
-    container_name: reverse-proxy-staging
-    image: ${REVERSE_PROXY_IMAGE:-reverse-proxy:master}
-    # ports:
-    #   - ${PUB_PORT:-80}:${PUB_PORT:-80}
-    #   - "443:443"
-    # volumes:
+    container_name: reverse-proxy
+    image: ${REVERSE_PROXY_IMAGE:-reverse-proxy}
+    ports:
+      - ${PUB_PORT:-80}:${PUB_PORT:-80}
+      - "443:443"
+    volumes:
+      - ${CERTS_DIR:-./nginx_config}:/etc/nginx/certs:ro
+      - ${STAGING_DIR:-./static}:/static/staging:z
     #   - ${CONFIG_DIR}:/etc/nginx/conf.d:z
-    #   - ${STATIC_DIR}:/staging:z
-    #   # ${CERTS_DIR}:/etc/ssl/private:z
+    #   - ${STATIC_DIR}:/static:z
   dbapi-staging:
     container_name: dbapi-staging
     restart: unless-stopped
     image: ${DBAPI_IMAGE:-dbapi:master}
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
       - TARGET=${TARGET:-staging}
   db-staging:
     container_name: vgac-db-staging
     restart: unless-stopped
     image: postgres:12-alpine
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
     volumes:
       - db-data-staging:/var/lib/postgresql/data
   expert-staging:
@@ -43,7 +44,7 @@ services:
     restart: unless-stopped
     image: ${SINGLE_TILE_IMAGE:-single-tile:master}
     environment:
-      - TARGET=${TARGET:-production}
+      - TARGET=${TARGET:-staging}
 
 volumes:
   db-data-staging:

@@ -4,7 +4,9 @@
 FROM nginx:1.17-alpine
 
 # Define mountable directories.
-# VOLUME ["/etc/nginx/sites-enabled", "/etc/nginx/certs", "/etc/nginx/conf.d", "/var/log/nginx", "/var/www/html"]
+# Volume bind Cert Files to a location on host
+# Volume bind staging static directory if desired
+VOLUME ["/etc/nginx/certs", "/var/log/nginx", "/static/staging"]
 
 # Define working directory.
 WORKDIR /etc/nginx
@@ -14,7 +16,6 @@ COPY ./nginx_config/*.conf /etc/nginx/conf.d/
 # Add Static files
 COPY ./static /static/
 
-# TODO Add Cert Files
 
 # Define default command.
 CMD ["nginx", "-g", "daemon off;"]
