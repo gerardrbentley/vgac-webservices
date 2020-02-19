@@ -17,7 +17,7 @@ variables:
   
 reverse_proxy:
   rules:
-    - if: $CI_COMMIT_BRANCH == "production"'
+    - if: '$CI_COMMIT_BRANCH == "production"'
       changes:
       - nginx_config/**/*
       - Dockerfile-faim-nginx
@@ -53,7 +53,7 @@ vgac_dbapi:
 
 db_manager:
   rules:
-    - if: $CI_COMMIT_BRANCH == "production"'
+    - if: '$CI_COMMIT_BRANCH == "production"'
       changes:
       - db_manager/**/*
       when: always
