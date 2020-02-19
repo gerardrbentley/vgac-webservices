@@ -36,13 +36,13 @@ def list_games(dir=os.path.join('/games')):
     return games
 
 
-def affords_from_csv_file(file, file_name):
+def affords_from_csv_file(file, id_col, file_name):
     if os.path.isfile(file):
-        with open(file, mode='r') as tile_csv:
-            csv_reader = csv.DictReader(tile_csv)
+        with open(file, mode='r') as csv_file:
+            csv_reader = csv.DictReader(csv_file)
             out = []
             for row in csv_reader:
-                if row['tile_id'] == file_name:
+                if row[id_col] == file_name:
                     out.append(row)
             return out
     return []
@@ -110,11 +110,11 @@ class DB_Manager(object):
             num_images, num_tags, num_skipped = self.ingest_screenshots(
                 game, os.path.join(dir, game, 'screenshots'))
 
-            num_tiles, num_tile_tags, num_tile_skipped = self.ingest_tiles(
-                game, os.path.join(dir, game, 'tiles'))
+            num_textures, num_texture_tags, num_texture_skipped = self.ingest_textures(
+                game, os.path.join(dir, game, 'textures'))
             # ingest_sprite_files(sprite_files, game), dir
             total_ingested[game] = {
-                'num_images': num_images, 'num_screenshot_tags': num_tags, 'num_tiles': num_tiles, 'skipped_images': num_skipped}
+                'num_images': num_images, 'num_screenshot_tags': num_tags, 'num_textures': num_textures, 'skipped_images': num_skipped}
         print('TOTALS: {}'.format(total_ingested))
 
     def ingest_screenshots(self, game, screenshots_dir):
@@ -221,53 +221,53 @@ class DB_Manager(object):
             }
             self.insert_screenshot_tag(to_insert)
 
-    def ingest_tiles(self, game, tiles_dir):
+    def ingest_textures(self, game, textures_dir):
         ctr = 0
         tag_ctr = 0
         skip_ctr = 0
-        for tile_file in glob.glob(os.path.join(tiles_dir, '*.png')):
-            file_name = os.path.split(tile_file)[1]
-            tile_id = os.path.splitext(file_name)[0]
-            is_in = self.check_uuid_in_table('tiles', 'tile_id', tile_id)
+        for texture_file in glob.glob(os.path.join(textures_dir, '*.png')):
+            file_name = os.path.split(texture_file)[1]
+            texture_id = os.path.splitext(file_name)[0]
+            is_in = self.check_uuid_in_table('textures', 'texture_id', texture_id)
             if is_in:
-                print(f'SKIPPED INGESTING TILE: {tile_id}')
+                print(f'SKIPPED INGESTING TEXTURE: {texture_id}')
                 skip_ctr += 1
             else:
-                with open(tile_file, 'rb') as f:
+                with open(texture_file, 'rb') as f:
                     data = f.read()
+                tex_image = Image.open(texture_file)
                 to_insert = {
-                    'tile_id': tile_id,
+                    'texture_id': texture_id,
                     'game': game,
-                    'width': 8,
-                    'height': 8,
+                    'width': tex_image.width,
+                    'height': tex_image.height,
                     'data': data,
                     'dt': datetime.now()
                 }
-                result = self.insert_tile(to_insert)
-                # tile_id = result['tile_id']
+                result = self.insert_texture(to_insert)
+                # texture_id = result['texture_id']
 
-                # TODO TILE AFFORDANCES
-                csv_file = os.path.join(tiles_dir, 'tile_affordances.csv')
-                tile_entries = affords_from_csv_file(csv_file, tile_id)
-                if len(tile_entries) > 0:
-                    print('TILE HAD AFFORDS')
-                    for tile_entry in tile_entries:
+                csv_file = os.path.join(textures_dir, 'texture_affordances.csv')
+                texture_entries = affords_from_csv_file(csv_file, 'texture_id', texture_id)
+                if len(texture_entries) > 0:
+                    print('texture HAD AFFORDS')
+                    for texture_entry in texture_entries:
                         to_insert = {
-                            'tile_id': tile_id,
-                            'tagger_id': tile_entry['tagger_id'],
-                            'solid': bool(int(tile_entry['solid'])),
-                            'movable': bool(int(tile_entry['movable'])),
-                            'destroyable': bool(int(tile_entry['destroyable'])),
-                            'dangerous': bool(int(tile_entry['dangerous'])),
-                            'gettable': bool(int(tile_entry['gettable'])),
-                            'portal': bool(int(tile_entry['portal'])),
-                            'usable': bool(int(tile_entry['usable'])),
-                            'changeable': bool(int(tile_entry['changeable'])),
-                            'ui': bool(int(tile_entry['ui'])),
-                            'permeable': bool(int(tile_entry['permeable'])),
+                            'texture_id': texture_id,
+                            'tagger_id': texture_entry['tagger_id'],
+                            'solid': texture_entry['solid'],
+                            'movable': texture_entry['movable'],
+                            'destroyable': texture_entry['destroyable'],
+                            'dangerous': texture_entry['dangerous'],
+                            'gettable': texture_entry['gettable'],
+                            'portal': texture_entry['portal'],
+                            'usable': texture_entry['usable'],
+                            'changeable': texture_entry['changeable'],
+                            'ui': texture_entry['ui'],
+                            'permeable': texture_entry['permeable'],
                             'dt': datetime.now()
                         }
-                        self.insert_tile_tag(to_insert)
+                        self.insert_texture_tag(to_insert)
                         tag_ctr += 1
                 ctr += 1
         return ctr, tag_ctr, skip_ctr
@@ -283,7 +283,8 @@ class DB_Manager(object):
 
             game_path = os.path.join(dest, game)
             os.makedirs(os.path.join(game_path, 'screenshots'), exist_ok=True)
-            os.makedirs(os.path.join(game_path, 'tiles'), exist_ok=True)
+            textures_folder = os.path.join(game_path, 'textures')
+            os.makedirs(textures_folder, exist_ok=True)            
             os.makedirs(os.path.join(game_path, 'sprites'), exist_ok=True)
 
             print(f'Made Directories for game: {game}, {game_path}')
@@ -320,33 +321,32 @@ class DB_Manager(object):
                         image_folder, f'{str(image_id)}.json'), 'w') as file:
                     json.dump(meta, file)
 
-            tiles = self.get_tiles_by_game(game)
-            print(f'Exporting {len(tiles)} tiles for {game}')
-            tiles_folder = os.path.join(game_path, 'tiles')
-            os.makedirs(tiles_folder, exist_ok=True)
+            textures = self.get_textures_by_game(game)
+            print(f'Exporting {len(textures)} textures for {game}')
+
             to_csv = []
-            for tile in tiles:
-                tile_id = tile['tile_id']
+            for texture in textures:
+                texture_id = texture['texture_id']
 
-                tile_file = os.path.join(tiles_folder, f'{tile_id}.png')
-                with open(tile_file, 'wb') as file:
-                    file.write(tile['data'].tobytes())
-                # orig_cv, encoded_img = P.from_data_to_cv(tile['data'])
+                texture_file = os.path.join(textures_folder, f'{texture_id}.png')
+                with open(texture_file, 'wb') as file:
+                    file.write(texture['data'].tobytes())
+                # orig_cv, encoded_img = P.from_data_to_cv(texture['data'])
                 # print(
-                #     f'saving file: {tile_file}  -- {orig_cv.shape} {type(orig_cv)}')
-                # cv2.imwrite(tile_file, orig_cv)
+                #     f'saving file: {texture_file}  -- {orig_cv.shape} {type(orig_cv)}')
+                # cv2.imwrite(texture_file, orig_cv)
 
-                tile_tag_entries = self.get_tile_affordances(tile_id)
-                for db_entry in tile_tag_entries:
+                texture_tag_entries = self.get_texture_affordances(texture_id)
+                for db_entry in texture_tag_entries:
                     print(db_entry)
                     print(type(db_entry))
                     print(db_entry.items())
 
                     to_insert = {k: v for k, v in db_entry.items()}
-                    # db_entry['file_name'] = db_entry.pop('tile_id')
+                    # db_entry['file_name'] = db_entry.pop('texture_id')
                     to_csv.append(to_insert)
-            with open(os.path.join(tiles_folder, 'tile_affordances.csv'), mode='w') as csv_file:
-                fieldnames = ["tile_id", "solid", "movable", "destroyable",
+            with open(os.path.join(textures_folder, 'texture_affordances.csv'), mode='w') as csv_file:
+                fieldnames = ["texture_id", "solid", "movable", "destroyable",
                               "dangerous", "gettable", "portal", "usable", "changeable", "ui", "permeable", "tagger_id"]
                 writer = csv.DictWriter(
                     csv_file, fieldnames=fieldnames, extrasaction='ignore')
@@ -434,10 +434,9 @@ class DB_Manager(object):
               ON UPDATE NO ACTION ON DELETE NO ACTION
             )"""
         )
-
-        tile_table = sql.SQL(
-            """CREATE TABLE IF NOT EXISTS tiles(
-            tile_id UUID PRIMARY KEY,
+        texture_table = sql.SQL(
+            """CREATE TABLE IF NOT EXISTS textures(
+            texture_id UUID PRIMARY KEY,
             game VARCHAR (50) NOT NULL,
             width integer,
             height integer,
@@ -445,24 +444,24 @@ class DB_Manager(object):
             data bytea
             )"""
         )
-        tile_tags_table = sql.SQL(
-            """CREATE TABLE IF NOT EXISTS tile_tags(
-            tile_id UUID NOT NULL,
+        texture_tags_table = sql.SQL(
+            """CREATE TABLE IF NOT EXISTS texture_tags(
+            texture_id UUID NOT NULL,
             created_on TIMESTAMP NOT NULL,
             tagger_id VARCHAR(50) NOT NULL,
-            solid boolean NOT NULL,
-            movable boolean NOT NULL,
-            destroyable boolean NOT NULL,
-            dangerous boolean NOT NULL,
-            gettable boolean NOT NULL,
-            portal boolean NOT NULL,
-            usable boolean NOT NULL,
-            changeable boolean NOT NULL,
-            ui boolean NOT NULL,
-            permeable boolean NOT NULL,
-            PRIMARY KEY (tile_id, tagger_id),
-            CONSTRAINT tile_tags_tile_id_fkey FOREIGN KEY (tile_id)
-              REFERENCES tiles (tile_id) MATCH SIMPLE
+            solid real NOT NULL,
+            movable real NOT NULL,
+            destroyable real NOT NULL,
+            dangerous real NOT NULL,
+            gettable real NOT NULL,
+            portal real NOT NULL,
+            usable real NOT NULL,
+            changeable real NOT NULL,
+            ui real NOT NULL,
+            permeable real NOT NULL,
+            PRIMARY KEY (texture_id, tagger_id),
+            CONSTRAINT texture_tags_texture_id_fkey FOREIGN KEY (texture_id)
+              REFERENCES textures (texture_id) MATCH SIMPLE
               ON UPDATE NO ACTION ON DELETE NO ACTION
             )"""
         )
@@ -481,24 +480,23 @@ class DB_Manager(object):
             sprite_id UUID NOT NULL,
             created_on TIMESTAMP NOT NULL,
             tagger_id VARCHAR(50) NOT NULL,
-            solid boolean NOT NULL,
-            movable boolean NOT NULL,
-            destroyable boolean NOT NULL,
-            dangerous boolean NOT NULL,
-            gettable boolean NOT NULL,
-            portal boolean NOT NULL,
-            usable boolean NOT NULL,
-            changeable boolean NOT NULL,
-            ui boolean NOT NULL,
-            permeable boolean NOT NULL,
+            solid real NOT NULL,
+            movable real NOT NULL,
+            destroyable real NOT NULL,
+            dangerous real NOT NULL,
+            gettable real NOT NULL,
+            portal real NOT NULL,
+            usable real NOT NULL,
+            changeable real NOT NULL,
+            ui real NOT NULL,
+            permeable real NOT NULL,
             PRIMARY KEY (sprite_id, tagger_id),
             CONSTRAINT sprite_tags_sprite_id_fkey FOREIGN KEY (sprite_id)
               REFERENCES sprites (sprite_id) MATCH SIMPLE
               ON UPDATE NO ACTION ON DELETE NO ACTION
             )"""
         )
-        to_exec = [screenshot_table, screenshot_tags_table, tile_table,
-                   tile_tags_table, sprite_table, sprite_tag_table]
+        to_exec = [screenshot_table, screenshot_tags_table, texture_table, texture_tags_table, sprite_table, sprite_tag_table]
 
         with self.connection:
             with self.connection.cursor() as cursor:
@@ -508,8 +506,7 @@ class DB_Manager(object):
 
     def drop_all(self):
         print('Dropping All')
-        tables = ['screenshots', 'screenshot_tags',
-                  'tiles', 'tile_tags', 'sprites', 'sprite_tags']
+        tables = ['screenshots', 'screenshot_tags', 'textures', 'texture_tags', 'sprites', 'sprite_tags']
         BASE = "DROP TABLE IF EXISTS {} CASCADE"
         with self.connection:
             with self.connection.cursor() as cursor:
@@ -584,10 +581,10 @@ class DB_Manager(object):
         if res is not None:
             return res
         return []
-
-    def get_tiles_by_game(self, game='default'):
+    
+    def get_textures_by_game(self, game='default'):
         cmd = sql.SQL(
-            """SELECT * FROM tiles
+            """SELECT * FROM textures
             WHERE game = %(game)s;
             """
         )
@@ -599,15 +596,15 @@ class DB_Manager(object):
             return res
         return []
 
-    def get_tile_affordances(self, tile_id='default'):
+    def get_texture_affordances(self, texture_id='default'):
         cmd = sql.SQL(
-            """SELECT * FROM tile_tags
-            WHERE tile_id = %(tile_id)s;
+            """SELECT * FROM texture_tags
+            WHERE texture_id = %(texture_id)s;
             """
         )
         with self.connection:
             with self.connection.cursor() as cursor:
-                cursor.execute(cmd, {'tile_id': tile_id})
+                cursor.execute(cmd, {'texture_id': texture_id})
                 res = cursor.fetchall()
         if res is not None:
             return res
@@ -643,11 +640,11 @@ class DB_Manager(object):
                 res = cursor.fetchone()
         return res[0]
 
-    def insert_tile(self, kwargs):
+    def insert_texture(self, kwargs):
         cmd = sql.SQL(
-            """INSERT INTO tiles(tile_id, game, width, height, created_on, data)
-            VALUES(%(tile_id)s, %(game)s, %(width)s, %(height)s, %(dt)s, %(data)s)
-            RETURNING tile_id
+            """INSERT INTO textures(texture_id, game, width, height, created_on, data)
+            VALUES(%(texture_id)s, %(game)s, %(width)s, %(height)s, %(dt)s, %(data)s)
+            RETURNING texture_id
             """
         )
         with self.connection:
@@ -656,13 +653,13 @@ class DB_Manager(object):
                 res = cursor.fetchone()
         return res[0]
 
-    def insert_tile_tag(self, kwargs):
+    def insert_texture_tag(self, kwargs):
         cmd = sql.SQL(
-            """INSERT INTO tile_tags(tile_id, created_on, tagger_id, solid, movable, destroyable, dangerous, gettable, portal, usable, changeable, ui, permeable)
-            VALUES(%(tile_id)s, %(dt)s, %(tagger_id)s, %(solid)s, %(movable)s, %(destroyable)s, %(dangerous)s, %(gettable)s, %(portal)s, %(usable)s, %(changeable)s, %(ui)s, %(permeable)s)
-            ON CONFLICT ON CONSTRAINT tile_tags_pkey
+            """INSERT INTO texture_tags(texture_id, created_on, tagger_id, solid, movable, destroyable, dangerous, gettable, portal, usable, changeable, ui, permeable)
+            VALUES(%(texture_id)s, %(dt)s, %(tagger_id)s, %(solid)s, %(movable)s, %(destroyable)s, %(dangerous)s, %(gettable)s, %(portal)s, %(usable)s, %(changeable)s, %(ui)s, %(permeable)s)
+            ON CONFLICT ON CONSTRAINT texture_tags_pkey
             DO UPDATE SET solid = %(solid)s, movable = %(movable)s, destroyable = %(destroyable)s, dangerous = %(dangerous)s, gettable = %(gettable)s, portal = %(portal)s, usable = %(usable)s, changeable = %(changeable)s, ui = %(ui)s, permeable = %(permeable)s
-            RETURNING tile_id
+            RETURNING texture_id
             """
         )
 

@@ -2,40 +2,51 @@
 
 Current tagging and database access tools for annotated images for VGAC
 
-Link to Live Site: http://vgac.cs.pomona.edu/tagging/expert
+Link to Live Site: https://vgac.cs.pomona.edu/
 
-Link to Staging Site: http://vgac.cs.pomona.edu/staging/tagging/expert
+Link to Staging Site: https://vgac.cs.pomona.edu/staging/
 
 Link to Paper: [EXAG 2019](http://www.exag.org/papers/EXAG_2019_paper_13.pdf)
 
 ## Table of Contents
 
-- [Setup](#setup)
+- [Local Development](#Local\ Development)
+- [vgac.cs.pomona](#VGAC.CS.POMONA)
 - [Services](#services)
 
-## Setup
+## LOCAL DEVELOPMENT
 
-### LOCAL DEVELOPMENT
-
+### Download and Setup for local development
 ```
 git clone $URL $FOLDER
 cd $FOLDER
+```
+You should change the `server` variable in /nginx_config/default.conf from `vgac.cs.pomona.edu` to `localhost` for local development (though this may not be a breaking change for nginx / your browser).
+
+### Just adding webpages
+If you don't need the whole server running on your computer and just want to add/edit files in the `static` directory, you can use a site like https://jsfiddle.net/ or https://codepen.io/ to sketch out html, css, and js without the hastle of a browser. It may even help fetching data from the live server.
+
+### Launch Docker network
+The next step requires docker to be [installed](https://docs.docker.com/v17.09/engine/installation/#supported-platforms), you probably want the stable Community Edition.
+
+If you update any of the docker images you'll need to rebuild them, it is often easiest to just re-run this command.
+```
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
-This requires docker to be [installed](https://docs.docker.com/v17.09/engine/installation/#supported-platforms), you probably want the stable Community Edition.
+
+(You can use the `-d` flag to get back control of your terminal window after launching, but then it's easier to forget to shut down the docker containers in the background)
+
+This strategy also allows 'hot-reloading' your static folder, as it is volume bound to the nginx reverse-proxy in docker-compose.dev.yml. So if you edit an html file `/static/html/test_changes.html` (or .js) and then reload the page https://localhost/html/test_changes.html in your browser you should see your changes. (You should also look into disabling caching for your browser so that it always sends the full request to your development server. In Chrome and Firefox `ctrl-shift-i` should get you to developer tools and there should be some settings to not cache while in dev mode). 
 
 This spins up fresh instances of the nginx reverse-proxy, database, dbapi, expert api, and single-tile api containers if they don't already exist.
-Fetches db connection information from .env file.
+
+It fetches db connection and local file information from .env file.
+
 Requires db_manager to run if database is not filled already (See DB Manager section below)
 
-You should change the `server` variable in /nginx_config/default.conf from `pom-itb-cs1.campus.pomona.edu` to `localhost`
+Some example data is provided in `text/testdata` to be ingested by the DB Manager. For getting different game data you should set up a different folder for that, `/testfolder/games` is a good choice for a name, as testfolder is .gitignored'd by default so you won't upload a bunch of data by accident. (Current vgac zip available at vgac tagging project). 
 
-By default the db-manager will use /testfolder/games and /testfolder/out_data for ingesting and bouncing, so you should populate /testfolder/games before running anything (current vgac zip available at vgac tagging project). 
-(testfolder is .gitignored'd by default, so you have to add the folders to your local set up)
-
-See docker-compose.dev.yml for host mounted location info
-
-After docker-compose up runs you should be able to navigate to http://localhost/html/expert.html and be served a page. Use the DB Manager to add data
+After docker-compose up runs you should be able to navigate to https://localhost/html/expert.html (or just localhost) and be served a page. Use the DB Manager to add data
 
 ### Launch DB Manager
 
@@ -52,11 +63,7 @@ keys = {'host': os.getenv('POSTGRES_HOST', 'vgac-db'),
 
 The following mount locations (-v) will work if you have a dataset folder in your current directory (path result of `pwd`), otherwise use absolute path to folder
 ```
-docker run -it --network=vgac-network -v "$(pwd)/testfolder/games":/app/games:z -v "$(pwd)/testfolder/out_data":/app/out_dataset:z db-manager
-```
-The following command is relevant to server on vgac.cs.pomona.edu updating production database
-```
-docker run -it --network=vgac-network -v "/webservices/webservices_dataset":/app/games:z -v "/webservices/out_dataset":/app/out_dataset:z -e POSTGRES_HOST=vgac-db gerardrbentley/vgac-webservices:db-manager-production
+docker run -it --network=vgac-network -v "$(pwd)/test/testdata":/app/games:z db-manager
 ```
 
 ### Using DB Manager
@@ -91,26 +98,15 @@ docker build -t db-manager -f Dockerfile-db-manager ./db_manager
 
 
 ## VGAC.CS.POMONA
-### Adding game data
+### Adding game data to Server
 ```
-scp -r -i ~/.ssh/PRIVATE_KEY ./games username@vgac.cs.pomona.edu:/webservices
-```
-
-## Database
-```
-docker exec -it vgac-db psql -U faim_lab -d affordances_db
+scp -r -i ~/.ssh/PRIVATE_KEY ./webservices_dataset username@vgac.cs.pomona.edu:/webservices
 ```
 
-Postgres Database can be spun up in its own docker container. For persistent storage, volume is mounted to host system. For easier connection to other docker containers and not revealing ports to world it is named and on the network. Otherwise started with base docker-compose.
-
+### Adding game data to Database
+The following command is relevant to server on vgac.cs.pomona.edu updating production database (change postgres_host to vgac-db-staging for staging)
 ```
-docker run -d --name vgac-db -e POSTGRES_USER postgres -e POSTGRES_DB postgres --network=vgac-network -v ./tmp_postgres=/var/lib/postgresql/data
-```
-
-## VGAC.CS.POMONA
-### Adding game data
-```
-scp -r -i ~/.ssh/PRIVATE_KEY ./games username@vgac.cs.pomona.edu:/webservices
+docker run -it --network=vgac-network -v "/webservices/webservices_dataset":/app/games:z -v "/webservices/out_dataset":/app/out_dataset:z -e POSTGRES_HOST=vgac-db gerardrbentley/vgac-webservices:db-manager-production
 ```
 
 ## Database
@@ -133,7 +129,7 @@ Tagging services hosted are rerouted from /tagging/$SERVICE to /static/html/$SER
 Service API's are registered with their own base, example /expert/get_image
 Not all services need to be spun up to access one, but a given service will not work correctly without adding its docker container
 
-Adding a clause like the following to main_nginx.conf will redirect to the service if available, but not fail if it isn't present
+Adding a clause like the following to default.conf will redirect to the service if available, but not fail if it isn't present
 ```
 location ~ ^/myService/(.*)$ {
         resolver 127.0.0.11 valid=30s;

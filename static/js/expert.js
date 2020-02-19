@@ -17,26 +17,36 @@
 //prevent mouse or trap mouse css
 //TODO: 24/10/19: event called oncontext menu -> capture on canvas element; check riot
 //TODO: 17/10/19: make image bigger on hover DONE: change colors of drawing
-//DONE: 17/10/19: erase on rightclick, make reset go back to last state of current tile
+//DONE: 17/10/19: erase on rightclick, make reset go back to last state of current texture
 //DONE: 15/10/19: make draw with mouse on affordances images: one click draw white other click draw black
 //DONE: 7/12/19: after json ready: url with post -> browser sending data to the server (look at riot screenshot), then reload the page to renew json or use ajax get more json
-//DONE: 30/09/19: generate a json (object?) without pictures but same tile_num + solid = 0; movable = 1; etc... + no locations either + also nine black-white imahges when user is done also... image ID + tagger ID and ... upload(post) this whole file to URL/server
+//DONE: 30/09/19: generate a json (object?) without pictures but same texture_num + solid = 0; movable = 1; etc... + no locations either + also nine black-white imahges when user is done also... image ID + tagger ID and ... upload(post) this whole file to URL/server
 
 
-
+// Decides if we're on staging site or live by checking for /staging/ at beginning of URL
 const baseURL = window.location
-console.log(baseURL.href)
 const basePathArray = baseURL.pathname.split('/')
-console.log(basePathArray)
-console.log(basePathArray[1])
 var BASE_URL = ''
 if (basePathArray[1] === 'staging'){
-     console.log('staging site')
+     console.log('staging site base url')
      BASE_URL = '/staging'
 }
 else{
-     console.log('live site')
+     console.log('live site url')
 }
+
+// Gets the tagger id from query string param (in url anything after ? -> ?tagger=xyz)
+const queryString = window.location.search
+const urlParams = new URLSearchParams(queryString)
+var TAGGER_ID = 'no-tagger'
+if (urlParams.has('tagger')){
+    TAGGER_ID = urlParams.get('tagger')
+    console.log('tagger id got from url')
+}
+else {
+    console.log('no tagger id in url')
+}
+
 /*
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ─██████████████─██████████████─████████████████──────██████████████─██████████─██████─────────██████████████────
@@ -68,7 +78,7 @@ else{
 
 //__________________________________________________________________________________
 
-var tile = document.getElementById("tile");
+var texture = document.getElementById("texture");
 var canvas_draw = document.getElementById("myCanvas");
 
 const GRID_SIZE = 8;
@@ -293,7 +303,7 @@ checkF.addEventListener('change', function(e)
 var mydata = {};
 var num = 0;
 var output; //
-var out_tiles = {};
+var out_textures = {};
 //_________________________________________
 
 var i;//replace its name
@@ -514,113 +524,6 @@ function myFunction()
     var popup = document.getElementById("myPopup");
     popup.classList.toggle("show");
 }
-//__________________________________________________________________________________
-/*
-─────────────────────────────────────────────────────────────
-─██████─────────██████████████─██████████████─████████████───
-─██░░██─────────██░░░░░░░░░░██─██░░░░░░░░░░██─██░░░░░░░░████─
-─██░░██─────────██░░██████░░██─██░░██████░░██─██░░████░░░░██─
-─██░░██─────────██░░██──██░░██─██░░██──██░░██─██░░██──██░░██─
-─██░░██─────────██░░██──██░░██─██░░██████░░██─██░░██──██░░██─
-─██░░██─────────██░░██──██░░██─██░░░░░░░░░░██─██░░██──██░░██─
-─██░░██─────────██░░██──██░░██─██░░██████░░██─██░░██──██░░██─
-─██░░██─────────██░░██──██░░██─██░░██──██░░██─██░░██──██░░██─
-─██░░██████████─██░░██████░░██─██░░██──██░░██─██░░████░░░░██─
-─██░░░░░░░░░░██─██░░░░░░░░░░██─██░░██──██░░██─██░░░░░░░░████─
-─██████████████─██████████████─██████──██████─████████████───
-─────────────────────────────────────────────────────────────
-───────────────────────────────────────────────────────────────────────────────────────────
-─██████████████─██████████████─████████████████───██████████─██████████████─██████████████─
-─██░░░░░░░░░░██─██░░░░░░░░░░██─██░░░░░░░░░░░░██───██░░░░░░██─██░░░░░░░░░░██─██░░░░░░░░░░██─
-─██░░██████████─██░░██████████─██░░████████░░██───████░░████─██░░██████░░██─██████░░██████─
-─██░░██─────────██░░██─────────██░░██────██░░██─────██░░██───██░░██──██░░██─────██░░██─────
-─██░░██████████─██░░██─────────██░░████████░░██─────██░░██───██░░██████░░██─────██░░██─────
-─██░░░░░░░░░░██─██░░██─────────██░░░░░░░░░░░░██─────██░░██───██░░░░░░░░░░██─────██░░██─────
-─██████████░░██─██░░██─────────██░░██████░░████─────██░░██───██░░██████████─────██░░██─────
-─────────██░░██─██░░██─────────██░░██──██░░██───────██░░██───██░░██─────────────██░░██─────
-─██████████░░██─██░░██████████─██░░██──██░░██████─████░░████─██░░██─────────────██░░██─────
-─██░░░░░░░░░░██─██░░░░░░░░░░██─██░░██──██░░░░░░██─██░░░░░░██─██░░██─────────────██░░██─────
-─██████████████─██████████████─██████──██████████─██████████─██████─────────────██████─────
-───────────────────────────────────────────────────────────────────────────────────────────
-
-*/
-//__________________________________________________________________________________load the script
-
-// (function()
-// {
-//     // Load the script
-//     var script = document.createElement("SCRIPT");
-//     script.src = 'https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js';
-//     script.type = 'text/javascript';
-//     script.onload = function()
-//     {
-//         var $ = window.jQuery;
-//         // Use $ here...
-//         // $.getJSON("example_data.json", function(json)
-//         // {
-//         //     mydata = json;
-//         //     //console.log(json); // this will show the info it in firebug console
-//         //     output = //get tagger id from somewhere later (?)
-//         //     {
-//         //         "tagger_id":"TestTagger",
-//         //         "image_id":mydata["output"]["image_id"]
-//         //     };
-//         //     for (var index = 0; index < Object.keys(mydata["output"]['tiles']).length; index++)
-//         //     {
-//         //         //console.log('inside for');
-//         //         var tile_index = 'tile_' + index;
-//         //         var act_tile = mydata["output"]['tiles'][tile_index];
-//         //         //console.log(act_tile);
-//         //         out_tiles[tile_index] =
-//         //         {
-//         //             "tile_id": act_tile['tile_id'],
-//         //             "solid":0,
-//         //             "movable":0,
-//         //             "destroyable":0,
-//         //             "dangerous":0,
-//         //             "gettable":0,
-//         //             "portal":0,
-//         //             "usable":0,
-//         //             "changeable":0,
-//         //             "ui":0
-//         //         };
-//         //     }
-//         // });
-//         $.get("/devjson", function(json)
-//         {
-//             mydata = json;
-//             //console.log(json); // this will show the info it in firebug console
-//             output = //get tagger id from somewhere later (?)
-//             {
-//                 "tagger_id":"TestTagger",
-//                 "image_id":mydata["output"]["image_id"]
-//             };
-//             for (var index = 0; index < Object.keys(mydata["output"]['tiles']).length; index++)
-//             {
-//                 //console.log('inside for');
-//                 var tile_index = 'tile_' + index;
-//                 var act_tile = mydata["output"]['tiles'][tile_index];
-//                 //console.log(act_tile);
-//                 out_tiles[tile_index] =
-//                 {
-//                     "tile_id": act_tile['tile_id'],
-//                     "solid":0,
-//                     "movable":0,
-//                     "destroyable":0,
-//                     "dangerous":0,
-//                     "gettable":0,
-//                     "portal":0,
-//                     "usable":0,
-//                     "changeable":0,
-//                     "ui":0
-//                 };
-//             }
-//         });
-//     };
-//     document.getElementsByTagName("head")[0].appendChild(script);
-//
-// })();
-
 
 
 //__________________________________________________________________________________
@@ -1003,64 +906,30 @@ window.addEventListener('load', function()
 {
     console.log('on load')
     fetch_data();
-    // var solid_img = document.getElementById('solid');
-    // solid_img.src = mydata["output"]['image'];
-    // var solid_img = document.getElementById('solid');
-    // solid_img.src = mydata["output"]['image'];
-    // var mov_img = document.getElementById('movable');
-    // mov_img.src = mydata["output"]['image'];
-    // var dest_img = document.getElementById('destroyable');
-    // dest_img.src = mydata["output"]['image'];
-    // var dang_img = document.getElementById('dangerous');
-    // dang_img.src = mydata["output"]['image'];
-    // var get_img = document.getElementById('gettable');
-    // get_img.src = mydata["output"]['image'];
-    // var port_img = document.getElementById('portal');
-    // port_img.src = mydata["output"]['image'];
-    // var us_img = document.getElementById('usable');
-    // us_img.src = mydata["output"]['image'];
-    // var chang_img = document.getElementById('changeable');
-    // chang_img.src = mydata["output"]['image'];
-    // var ui_img = document.getElementById('ui');
-    // ui_img.src = mydata["output"]['image'];
-    // var scrn_img = document.getElementById('screenshot_preview');
-    // scrn_img.src = mydata["output"]['image'];
-    // var tile_tmp = document.getElementById('tile');
-    // tile_tmp.src = mydata["output"]['tiles']['tile_0']['tile_data'];
-    // var poses = mydata["output"]['tiles']['tile_' + num]['locations'];
-    // for(i = 0; i < Object.keys(poses).length; i++)
-    // {
-    //     pos_x = poses['location_' + i]['x'];
-    //     pos_y = poses['location_' + i]['y'];
-    //     draw(pos_x, pos_y, canvas_draw);
-    // }
 })
 
 function fetch_data(){
   console.log(mydata)
-  tagger_id = document.getElementById("tagger_id").getAttribute('tagger')
-  temp_url = BASE_URL + "/expert/get_image?tagger=" + tagger_id
+  temp_url = BASE_URL + "/expert/get_image?tagger=" + TAGGER_ID
   $.getJSON(temp_url, function(json)
   {
       mydata = json;
       console.log(mydata);
       console.log(mydata["output"]) // this will show the info it in firebug console
-      output = //get tagger id from somewhere later (?)
+      output =
       {
-          "tagger_id":tagger_id,
+          "tagger_id":TAGGER_ID,
           "image_id":mydata.output.image_id
       };
       console.log('output w/ tagger')
       console.log(output)
-      for (var index = 0; index < Object.keys(mydata["output"]['tiles']).length; index++)
+      for (var index = 0; index < Object.keys(mydata["output"]['textures']).length; index++)
       {
-          //console.log('inside for');
-          var tile_index = 'tile_' + index;
-          var act_tile = mydata.output.tiles[tile_index];
-          //console.log(act_tile);
-          out_tiles[tile_index] =
+          var texture_index = 'texture_' + index;
+          var act_texture = mydata.output.textures[texture_index];
+          out_textures[texture_index] =
           {
-              "tile_id": act_tile['tile_id'],
+              "texture_id": act_texture['texture_id'],
               "solid":0,
               "movable":0,
               "destroyable":0,
@@ -1107,10 +976,10 @@ function update_images(){
     permeable_img.src = mydata["output"]['image'];
     var scrn_img = document.getElementById('screenshot_preview');
     scrn_img.src = mydata["output"]['image'];
-    var tile_tmp = document.getElementById('tile');
-    tile_tmp.src = mydata["output"]['tiles']['tile_0']['tile_data'];
+    var texture_tmp = document.getElementById('texture');
+    texture_tmp.src = mydata["output"]['textures']['texture_0']['texture_data'];
 
-    document.getElementById("curr_tiles").textContent=String(num) + "/" + String(Object.keys(mydata["output"]['tiles']).length) + " Tiles";
+    document.getElementById("curr_textures").textContent=String(num) + "/" + String(Object.keys(mydata["output"]['textures']).length) + " textures";
 
 
     grid_movex = mydata["output"]['x_offset']
@@ -1121,7 +990,7 @@ function update_images(){
     check_grid_on = 1;
     grid_checked = 1;
 
-    var poses = mydata["output"]['tiles']['tile_' + num]['locations'];
+    var poses = mydata["output"]['textures']['texture_' + num]['locations'];
     for(i = 0; i < Object.keys(poses).length; i++)
     {
         pos_x = poses['location_' + i]['x'];
@@ -1198,26 +1067,26 @@ function send_output_to_server(){
 function flip_affordance(whichcheckbox, whichcanvas){
     if(whichcheckbox.checked)
     {
-        poses = mydata["output"]['tiles']['tile_' + num]['locations'];
+        poses = mydata["output"]['textures']['texture_' + num]['locations'];
         for(i = 0; i < Object.keys(poses).length; i++)
         {
             pos_x = poses['location_' + i]['x'];
             pos_y = poses['location_' + i]['y'];
             draw_b(pos_x, pos_y, whichcanvas, GRID_SIZE, GRID_SIZE);
         }
-        out_tiles['tile_'+num]['solid'] = 0;
+        out_textures['texture_'+num]['solid'] = 0;
         whichcheckbox.checked = false;
 
     }
     else{
-        poses = mydata["output"]['tiles']['tile_' + num]['locations'];
+        poses = mydata["output"]['textures']['texture_' + num]['locations'];
         for(i = 0; i < Object.keys(poses).length; i++)
         {
             pos_x = poses['location_' + i]['x'];
             pos_y = poses['location_' + i]['y'];
             draw(pos_x, pos_y, whichcanvas);
         }
-        out_tiles['tile_'+num]['solid'] = 1;//do for all affordances!!!!!!!!!!!!!
+        out_textures['texture_'+num]['solid'] = 1;//do for all affordances!!!!!!!!!!!!!
         whichcheckbox.checked = true;
     }
 }
@@ -1244,8 +1113,8 @@ document.onkeydown = function(event)
 {
     var pos_x = 0;
     var pos_y = 0;
-    var tiles = mydata["output"]['tiles'];
-    var poses = mydata["output"]['tiles']['tile_' + num]['locations'];
+    var textures = mydata["output"]['textures'];
+    var poses = mydata["output"]['textures']['texture_' + num]['locations'];
     switch (event.keyCode)
     {
         case 8: //Backspace
@@ -1261,14 +1130,14 @@ document.onkeydown = function(event)
                 }
 
                 num = num - 1;
-                if (num == -1)//check evr time that num doesnt exceed amount of tiles
+                if (num == -1)//check evr time that num doesnt exceed amount of textures
                 {
                     num = num + 1;
-                    alert('Out of tiles. Current tile num = ' + num);
+                    alert('Out of textures. Current texture num = ' + num);
                 }
 
-                tile.src = tiles['tile_' + num]['tile_data'];
-                poses = mydata["output"]['tiles']['tile_' + num]['locations'];
+                texture.src = textures['texture_' + num]['texture_data'];
+                poses = mydata["output"]['textures']['texture_' + num]['locations'];
 
                 for(i = 0; i < Object.keys(poses).length; i++)
                 {
@@ -1289,7 +1158,7 @@ document.onkeydown = function(event)
                 checkF.checked = false;
                 //
                 saveAffordanceImages();
-                document.getElementById("curr_tiles").textContent=String(num) + "/" + String(Object.keys(mydata["output"]['tiles']).length) + " Tiles";
+                document.getElementById("curr_textures").textContent=String(num) + "/" + String(Object.keys(mydata["output"]['textures']).length) + " textures";
         break;
         case 13: //ENTER
             if(grid_checked)
@@ -1306,14 +1175,14 @@ document.onkeydown = function(event)
                 }
 
                 num = num + 1;
-                if (num == (Object.keys(tiles).length))//check evr time that num doesnt exceed amount of tiles
+                if (num == (Object.keys(textures).length))//check evr time that num doesnt exceed amount of textures
                 {
                     num = num - 1;
-                    alert('Out of tiles. Last tile num = ' + num);
+                    alert('Out of textures. Last texture num = ' + num);
                 }
 
-                tile.src = tiles['tile_' + num]['tile_data'];
-                poses = mydata["output"]['tiles']['tile_' + num]['locations'];
+                texture.src = textures['texture_' + num]['texture_data'];
+                poses = mydata["output"]['textures']['texture_' + num]['locations'];
                 //drawGrid(canvas_draw, 256, 224, GRID_SIZE, 'rgb(250, 25, 25)')
                 for(i = 0; i < Object.keys(poses).length; i++)
                 {
@@ -1334,7 +1203,7 @@ document.onkeydown = function(event)
                 checkC.checked = false;
                 //
                 saveAffordanceImages();
-                document.getElementById("curr_tiles").textContent=String(num) + "/" + String(Object.keys(mydata["output"]['tiles']).length) + " Tiles";
+                document.getElementById("curr_textures").textContent=String(num) + "/" + String(Object.keys(mydata["output"]['textures']).length) + " textures";
 
             }
             else
@@ -1345,7 +1214,7 @@ document.onkeydown = function(event)
         break;
         case 32: //space to save
             saveAffordanceImages();
-            output["tiles"] = out_tiles
+            output["textures"] = out_textures
             send_output_to_server();
         break;
         //____________________vvv keypress to draw on affordances squares vvv
@@ -1389,7 +1258,7 @@ document.onkeydown = function(event)
         case 27: // ECS
             if(!is_big)
             {
-                poses = mydata["output"]['tiles']['tile_' + num]['locations'];
+                poses = mydata["output"]['textures']['texture_' + num]['locations'];
                 for(i = 0; i < Object.keys(poses).length; i++)
                 {
                     pos_x = poses['location_' + i]['x'];
@@ -1404,16 +1273,16 @@ document.onkeydown = function(event)
                     draw_b(pos_x, pos_y, canvas_usable, GRID_SIZE, GRID_SIZE);
                     draw_b(pos_x, pos_y, canvas_changeable, GRID_SIZE, GRID_SIZE);
                     draw_b(pos_x, pos_y, canvas_permeable, GRID_SIZE, GRID_SIZE);
-                    out_tiles['tile_'+num]['solid'] = 0;
-                    out_tiles['tile_'+num]['movable'] = 0;
-                    out_tiles['tile_'+num]['destroyable'] = 0;
-                    out_tiles['tile_'+num]['dangerous'] = 0;
-                    out_tiles['tile_'+num]['gettable'] = 0;
-                    out_tiles['tile_'+num]['portal'] = 0;
-                    out_tiles['tile_'+num]['usable'] = 0;
-                    out_tiles['tile_'+num]['changeable'] = 0;
-                    out_tiles['tile_'+num]['ui'] = 0;
-                    out_tiles['tile_'+num]['permeable'] = 0;
+                    out_textures['texture_'+num]['solid'] = 0;
+                    out_textures['texture_'+num]['movable'] = 0;
+                    out_textures['texture_'+num]['destroyable'] = 0;
+                    out_textures['texture_'+num]['dangerous'] = 0;
+                    out_textures['texture_'+num]['gettable'] = 0;
+                    out_textures['texture_'+num]['portal'] = 0;
+                    out_textures['texture_'+num]['usable'] = 0;
+                    out_textures['texture_'+num]['changeable'] = 0;
+                    out_textures['texture_'+num]['ui'] = 0;
+                    out_textures['texture_'+num]['permeable'] = 0;
                     checkQ.checked = false;
                     checkW.checked = false;
                     checkE.checked = false;
