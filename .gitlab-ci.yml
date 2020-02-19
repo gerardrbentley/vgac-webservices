@@ -4,20 +4,20 @@ stages:
   - build_manager
   - build_expert
   - build_single
-  # - update_nginx
   - staging
   - deploy
 
 variables:
   DBAPI_IMAGE_TAG: $DOCKER_HUB:dbapi-$CI_COMMIT_REF_SLUG
-  REVERSE_PROXY_IMAGE_TAG: $DOCKER_HUB:reverse-proxy-$CI_COMMIT_REF_SLUG
-  DB_MANAGER_IMAGE_TAG: $DOCKER_HUB:db-manager-$CI_COMMIT_REF_SLUG
   EXPERT_IMAGE_TAG: $DOCKER_HUB:expert-$CI_COMMIT_REF_SLUG
   SINGLE_TILE_IMAGE_TAG: $DOCKER_HUB:single-tile-$CI_COMMIT_REF_SLUG
-
+  # Used to have staging and production of proxy and manager
+  REVERSE_PROXY_IMAGE_TAG: $DOCKER_HUB:reverse-proxy-production
+  DB_MANAGER_IMAGE_TAG: $DOCKER_HUB:db-manager-production
+  
 reverse_proxy:
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "production"'
+    - if: $CI_COMMIT_BRANCH == "production"'
       changes:
       - nginx_config/**/*
       - Dockerfile-faim-nginx
@@ -53,7 +53,7 @@ vgac_dbapi:
 
 db_manager:
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "production"'
+    - if: $CI_COMMIT_BRANCH == "production"'
       changes:
       - db_manager/**/*
       when: always
@@ -102,32 +102,6 @@ single:
     - /kaniko/executor --context $CI_PROJECT_DIR/single_tile_tagging --dockerfile $CI_PROJECT_DIR/single_tile_tagging/Dockerfile-single-tile --destination $SINGLE_TILE_IMAGE_TAG
   stage: build_single
 
-# net_update:
-#   stage: update_nginx
-#   rules:
-#     - if: '$CI_COMMIT_BRANCH == "production"'
-#       changes:
-#       - static/**/*
-#       - nginx_config/**/*
-#       - Dockerfile-faim-nginx
-#       when: always
-#   image: bash
-#   script: |
-#     apk update; apk add openssh-client
-#     chmod 600 $PRIVATE_KEY
-#     scp -r -i $PRIVATE_KEY \
-#       -o UserKnownHostsFile=/dev/null \
-#       -o StrictHostKeyChecking=no  \
-#       ./static \
-#       faim@vgac.cs.pomona.edu:/data/faim
-#     echo 'Static files copied to /data/faim/static'
-#     scp -r -i $PRIVATE_KEY \
-#       -o UserKnownHostsFile=/dev/null \
-#       -o StrictHostKeyChecking=no  \
-#       ./nginx_config \
-#       faim@vgac.cs.pomona.edu:/data/faim
-#     echo 'Config files copied to /data/faim/nginx_config'
-
 deploy-staging:
   stage: staging
   rules:
@@ -146,6 +120,13 @@ deploy-staging:
       docker-compose.staging.yml \
       faim@vgac.cs.pomona.edu:/webservices/docker-compose.staging.yml
     echo 'Docker-compose copied'
+    scp -i $PRIVATE_KEY \
+      -o UserKnownHostsFile=/dev/null \
+      -o StrictHostKeyChecking=no  \
+      -r \
+      static/ \
+      faim@vgac.cs.pomona.edu:$STAGING_DIR
+    echo 'Staging static files copied to $STAGING_DIR'
     ssh faim@vgac.cs.pomona.edu \
       -o UserKnownHostsFile=/dev/null \
       -o StrictHostKeyChecking=no \
@@ -159,21 +140,19 @@ deploy-staging:
      EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
      SINGLE_TILE_IMAGE=$SINGLE_TILE_IMAGE_TAG \
        docker-compose -f docker-compose.staging.yml pull
-     echo 'Pull db manager (not in compose)'
-     docker pull $DB_MANAGER_IMAGE_TAG
      echo 'Using docker-compose up'
      echo 'Deploying TARGET: $CI_ENVIRONMENT_SLUG'
      POSTGRES_USER=$POSTGRES_USER \
        POSTGRES_DB=$POSTGRES_DB \
        POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
        POSTGRES_PORT=$POSTGRES_PORT \
-       TARGET=$CI_ENVIRONMENT_SLUG \
-       CERTS_DIR=$CERTS_DIR \
        DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
        REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
-       DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
        EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
        SINGLE_TILE_IMAGE=$SINGLE_TILE_IMAGE_TAG \
+       STAGING_DIR=$STAGING_DIR \
+       TARGET=$CI_ENVIRONMENT_SLUG \
+       CERTS_DIR=$CERTS_DIR \
        docker-compose -f docker-compose.staging.yml up -d
      echo 'Staging Up and Serving'"
 
@@ -217,12 +196,12 @@ deploy-prod:
        POSTGRES_DB=$POSTGRES_DB \
        POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
        POSTGRES_PORT=$POSTGRES_PORT \
-       TARGET=$CI_ENVIRONMENT_SLUG \
-       CERTS_DIR=$CERTS_DIR \
        DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
        REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
-       DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
        EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
        SINGLE_TILE_IMAGE=$SINGLE_TILE_IMAGE_TAG \
+       STAGING_DIR=$STAGING_DIR \
+       TARGET=$CI_ENVIRONMENT_SLUG \
+       CERTS_DIR=$CERTS_DIR \
        docker-compose up -d
      echo 'production serving'"
