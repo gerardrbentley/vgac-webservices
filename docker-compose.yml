@@ -9,7 +9,7 @@ services:
       - ${PUB_PORT:-80}:${PUB_PORT:-80}
       - "443:443"
     volumes:
-      - ${CERTS_DIR:-./nginx_config}:/etc/nginx/certs:ro
+      - ${CERTS_DIR:-./test}:/etc/nginx/certs:ro
       - ${STAGING_DIR:-./static}:/static/staging:z
     #   - ${CONFIG_DIR}:/etc/nginx/conf.d:z
     #   - ${STATIC_DIR}:/static:z
