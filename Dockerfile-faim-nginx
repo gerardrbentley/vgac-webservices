@@ -4,7 +4,7 @@
 FROM nginx:1.17-alpine
 
 # Define mountable directories.
-# VOLUME ["/etc/nginx/sites-enabled", "/etc/nginx/certs", "/etc/nginx/conf.d", "/var/log/nginx", "/var/www/html"]
+VOLUME ["/etc/nginx/certs", "/var/log/nginx"]
 
 # Define working directory.
 WORKDIR /etc/nginx
