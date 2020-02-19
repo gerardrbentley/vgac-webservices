@@ -136,7 +136,7 @@ deploy-staging:
   image: bash
   environment:
     name: staging
-    url: https://vgac.cs.pomona.edu
+    url: https://vgac.cs.pomona.edu/staging/
   script: |
     apk update; apk add openssh-client
     chmod 600 $PRIVATE_KEY
@@ -168,8 +168,7 @@ deploy-staging:
        POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
        POSTGRES_PORT=$POSTGRES_PORT \
        TARGET=$CI_ENVIRONMENT_SLUG \
-       CONFIG_DIR=$CONFIG_DIR \
-       STATIC_DIR=$STATIC_DIR \
+       CERTS_DIR=$CERTS_DIR \
        DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
        REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
        DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
@@ -219,8 +218,7 @@ deploy-prod:
        POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
        POSTGRES_PORT=$POSTGRES_PORT \
        TARGET=$CI_ENVIRONMENT_SLUG \
-       CONFIG_DIR=$CONFIG_DIR \
-       STATIC_DIR=$STATIC_DIR \
+       CERTS_DIR=$CERTS_DIR \
        DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
        REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
        DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
