@@ -81,6 +81,9 @@ def unbuffer_and_decode(image_bytes):
         return defer.fail()
     return defer.succeed(image)
 
+@inlineCallbacks
+def unique_textures_from_image(image):
+    return defer.fail()
 
 @inlineCallbacks
 def unique_tiles_using_meta(image, y_offset=0, x_offset=0, width=256, height=224, crop_l=0, crop_r=0, crop_t=0, crop_b=0, ui_x=0, ui_y=0, ui_height=0, ui_width=0):
@@ -130,7 +133,7 @@ def unique_tiles_using_meta(image, y_offset=0, x_offset=0, width=256, height=224
                         'ERROR MATCHING TILE WITHIN IMAGE: (r,c) ({},{})'.format(r, c))
 
                 img_tiles.append({
-                    'tile_data': b64_string(data),
+                    'texture_data': b64_string(data),
                     'locations': matches_dict
                 })
                 tile_ctr += 1
@@ -143,42 +146,42 @@ def unique_tiles_using_meta(image, y_offset=0, x_offset=0, width=256, height=224
     return img_tiles
 
 
-def get_tile_ids(unique_tiles, known_tiles):
-    tiles_to_tag = {}
-    print('LEN UNIQUE: {}'.format(len(unique_tiles)))
+def get_texture_ids(unique_textures, known_textures):
+    textures_to_tag = {}
+    print('LEN UNIQUE: {}'.format(len(unique_textures)))
     try:
         hit_ctr = 0
         miss_ctr = 0
-        for idx, screenshot_tile in enumerate(unique_tiles):
-            to_compare = screenshot_tile['tile_data']
+        for idx, screenshot_texture in enumerate(unique_textures):
+            to_compare = screenshot_texture['texture_data']
             is_in_db = False
-            for tile_info in known_tiles:
-                b64_tile = tile_info['data']
-                if b64_tile == to_compare:
+            for texture_info in known_textures:
+                b64_texture = texture_info['data']
+                if b64_texture == to_compare:
                     is_in_db = True
 
                     hit_ctr += 1
 
-                    tiles_to_tag['tile_{}'.format(idx)] = {
-                        'tile_id': tile_info['tile_id'],
-                        'tile_data': to_compare,
-                        'locations': screenshot_tile['locations']
+                    textures_to_tag['texture_{}'.format(idx)] = {
+                        'texture_id': texture_info['texture_id'],
+                        'texture_data': to_compare,
+                        'locations': screenshot_texture['locations']
                     }
                     break
             if not is_in_db:
                 miss_ctr += 1
-                tiles_to_tag['tile_{}'.format(idx)] = {
-                    'tile_id': -1,
-                    'tile_data': to_compare,
-                    'locations': screenshot_tile['locations']
+                textures_to_tag['texture_{}'.format(idx)] = {
+                    'texture_id': -1,
+                    'texture_data': to_compare,
+                    'locations': screenshot_texture['locations']
                 }
     except:
         return defer.fail()
     # print('done')
     # print('done 2')
-    print(f'db tile hits: {hit_ctr}, misses: {miss_ctr}')
+    print(f'db texture hits: {hit_ctr}, misses: {miss_ctr}')
     # print('wtf')
-    return defer.succeed(tiles_to_tag)
+    return defer.succeed(textures_to_tag)
 
 
 def succConnectionPool(conn):
@@ -226,28 +229,28 @@ class VGAC_Database(object):
         return self.dbpool.runOperation(cmd, kwargs)
         # print('Insert Screenshot tag Called and Ended')
 
-    def insert_tile(self, kwargs):
+    def insert_texture(self, kwargs):
         cmd = sql.SQL(
-            """INSERT INTO tiles(tile_id, game, width, height, created_on, data)
-            VALUES(%(tile_id)s, %(game)s, %(width)s, %(height)s, %(dt)s, %(data)s)
-            RETURNING tile_id
+            """INSERT INTO textures(texture_id, game, width, height, created_on, data)
+            VALUES(%(texture_id)s, %(game)s, %(width)s, %(height)s, %(dt)s, %(data)s)
+            RETURNING texture_id
             """
         )
         return self.dbpool.runOperation(cmd, kwargs)
-        # print('Insert Tile Called and Ended')
+        # print('Insert texture Called and Ended')
 
-    def insert_tile_tag(self, kwargs):
+    def insert_texture_tag(self, kwargs):
         cmd = sql.SQL(
-            """INSERT INTO tile_tags(tile_id, created_on, tagger_id, solid, movable, destroyable, dangerous, gettable, portal, usable, changeable, ui, permeable)
-            VALUES(%(tile_id)s, %(dt)s, %(tagger_id)s, %(solid)s, %(movable)s, %(destroyable)s, %(dangerous)s, %(gettable)s, %(portal)s, %(usable)s, %(changeable)s, %(ui)s, %(permeable)s)
-            ON CONFLICT ON CONSTRAINT tile_tags_pkey
+            """INSERT INTO texture_tags(texture_id, created_on, tagger_id, solid, movable, destroyable, dangerous, gettable, portal, usable, changeable, ui, permeable)
+            VALUES(%(texture_id)s, %(dt)s, %(tagger_id)s, %(solid)s, %(movable)s, %(destroyable)s, %(dangerous)s, %(gettable)s, %(portal)s, %(usable)s, %(changeable)s, %(ui)s, %(permeable)s)
+            ON CONFLICT ON CONSTRAINT texture_tags_pkey
             DO UPDATE SET solid = %(solid)s, movable = %(movable)s, destroyable = %(destroyable)s, dangerous = %(dangerous)s, gettable = %(gettable)s, portal = %(portal)s, usable = %(usable)s, changeable = %(changeable)s, ui = %(ui)s, permeable = %(permeable)s
-            RETURNING tile_id
+            RETURNING texture_id
             """
         )
 
         return self.dbpool.runOperation(cmd, kwargs)
-        # print('Insert Tile Tag Called and Ended')
+        # print('Insert texture Tag Called and Ended')
 
     def queryAll(self, table):
         select_stmt = sql.SQL("SELECT * FROM {}").format(sql.Identifier(table))
@@ -298,13 +301,13 @@ class VGAC_Database(object):
         )
         return self.dbpool.runQuery(cmd)
 
-    def get_tile_affordances(self, tile_id='default'):
+    def get_texture_affordances(self, texture_id='default'):
         cmd = sql.SQL(
-            """SELECT * FROM tile_tags
-            WHERE tile_id = %(tile_id)s;
+            """SELECT * FROM texture_tags
+            WHERE texture_id = %(texture_id)s;
             """
         )
-        return self.dbpool.runQuery(cmd, {"tile_id": tile_id})
+        return self.dbpool.runQuery(cmd, {"texture_id": texture_id})
 
     def get_screenshots_by_game(self, game='default'):
         cmd = sql.SQL(
@@ -314,9 +317,9 @@ class VGAC_Database(object):
         )
         return self.dbpool.runQuery(cmd, {"game": game})
 
-    def get_tiles_by_game(self, game='default'):
+    def get_textures_by_game(self, game='default'):
         cmd = sql.SQL(
-            """SELECT * FROM tiles
+            """SELECT * FROM textures
             WHERE game = %(game)s;
             """
         )
@@ -390,22 +393,22 @@ class VGAC_DBAPI(object):
         try:
             data = json.loads(request.content.read())
         except:
-            return err_with_logger(request, self.log, f'Bad JSON from POST request')
+            return err_with_logger(request, self.log, f'Bad JSON in POST request')
 
         tagger_id = data.get('tagger_id', None)
         image_id = data.get('image_id', None)
         if tagger_id is None:
-            return err_with_logger(request, self.log, f'Bad tagger id or image id from POST request')
+            return err_with_logger(request, self.log, f'Bad tagger id or image id in POST request')
 
         self.log.info(f'RECEIVED TAGS FROM: {tagger_id} FOR IMAGE: {image_id}')
 
-        # We use [] instead of None to just ignore the iteration, don't have to handle error
-        tiles = (data.get('tiles', []))
+        # We use [] instead of None to just ignore the iteration and still log, don't have to handle error
+        textures = (data.get('textures', []))
         try:
-            tile_insertion = yield self.tiles_to_db(tiles, tagger_id)
-            self.log.info(f'{tile_insertion}')
+            texture_insertion = yield self.textures_to_db(textures, tagger_id)
+            self.log.info(f'{texture_insertion}')
         except:
-            return err_with_logger(request, self.log, f'Bad JSON inserting tiles')
+            return err_with_logger(request, self.log, f'Bad JSON inserting textures')
 
         tag_images = data.get('tag_images', [])
         if len(tag_images) > 0 and image_id is None:
@@ -497,109 +500,165 @@ class VGAC_DBAPI(object):
         except:
             return err_with_logger(request, self.log, 'Failed to get tiles for image')
         try:
-            game_tile_data = yield self.db.get_tiles_by_game(game)
+            game_texture_data = yield self.db.get_textures_by_game(game)
         except:
             return err_with_logger(request, self.log, f'Failed to get tiles for game: {game}')
         try:
-            known_game_tiles = []
-            for record in game_tile_data:
+            known_game_textures = []
+            for record in game_texture_data:
                 mapper = {
-                    'tile_id': record['tile_id'],
+                    'texture_id': record['texture_id'],
                 }
                 data = record['data']
                 strf = b64_string(data)
                 mapper['data'] = strf
-                known_game_tiles.append(mapper)
-            self.log.info(f'len known tiles: {len(known_game_tiles)}')
-            out_tiles = yield get_tile_ids(unique_tiles, known_game_tiles)
+                known_game_textures.append(mapper)
+            self.log.info(f'len known tiles: {len(known_game_textures)}')
+            out_tiles = yield get_texture_ids(unique_tiles, known_game_textures)
         except:
             return err_with_logger(request, self.log, 'Failed to match tiles for ids')
 
         request.setHeader('Content-Type', 'application/json')
         return json.dumps(out_tiles)
 
-    @app.route('/tiles/<string:tile_id>', methods=['GET'])
+    # TODO: Write get image textures function
+    @app.route('/screenshots/<string:image_id>/textures', methods=['GET'])
     @inlineCallbacks
-    def tileById(self, request, tile_id):
+    def texturesByImage(self, request, image_id):
         try:
-            d = yield self.db.get_resource_by_id(table='tiles', col='tile_id', resource_id=tile_id)
+            result = yield self.db.get_resource_by_id(table='screenshots', col='image_id', resource_id=image_id)
+            record = result[0]
+        except:
+            return err_with_logger(request, self.log, 'Failed to get screenshot by id')
+        try:
+            image_data = record['data']
+            image_id = record['image_id']
+            game = record['game']
+            meta = {
+                'width': record['width'],
+                'height': record['height'],
+                'y_offset': record['y_offset'],
+                'x_offset': record['x_offset'],
+                'crop_l': record['crop_l'],
+                'crop_r': record['crop_r'],
+                'crop_b': record['crop_b'],
+                'crop_t': record['crop_t'],
+                'ui_x': record['ui_x'],
+                'ui_y': record['ui_y'],
+                'ui_width': record['ui_width'],
+                'ui_height': record['ui_height'],
+            }
+        except:
+            return err_with_logger(request, self.log, 'Bad Screenshot JSON or meta')
+
+        try:
+            unique_textures = yield unique_textures_from_image(image_data)
+        except:
+            return err_with_logger(request, self.log, 'Failed to get textures for image')
+        try:
+            game_texture_data = yield self.db.get_textures_by_game(game)
+        except:
+            return err_with_logger(request, self.log, f'Failed to get textures for game: {game}')
+        try:
+            known_game_textures = []
+            for record in game_texture_data:
+                mapper = {
+                    'texture_id': record['texture_id'],
+                }
+                data = record['data']
+                strf = b64_string(data)
+                mapper['data'] = strf
+                known_game_textures.append(mapper)
+            self.log.info(f'len known textures: {len(known_game_textures)}')
+            out_textures = yield get_texture_ids(unique_textures, known_game_textures)
+        except:
+            return err_with_logger(request, self.log, 'Failed to match textures for ids')
+
+        request.setHeader('Content-Type', 'application/json')
+        return json.dumps(out_textures)
+
+    @app.route('/textures/<string:texture_id>', methods=['GET'])
+    @inlineCallbacks
+    def textureById(self, request, texture_id):
+        try:
+            d = yield self.db.get_resource_by_id(table='textures', col='texture_id', resource_id=texture_id)
         except:
             return err_with_logger(self.log, request, 'Failed to Query DB')
         try:
-            d = yield self.tileJSON(d)
+            d = yield self.textureJSON(d)
         except:
-            return err_with_logger(self.log, request, 'Bad JSON from db for tiles')
+            return err_with_logger(self.log, request, 'Bad JSON from db for textures')
 
         request.setHeader('Content-Type', 'application/json')
         return d
 
-    @app.route('/tiles/<string:tile_id>/affordances', methods=['GET'])
+    @app.route('/textures/<string:texture_id>/affordances', methods=['GET'])
     @inlineCallbacks
-    def tileAffordanceById(self, request, tile_id):
+    def textureAffordanceById(self, request, texture_id):
         try:
-            d = yield self.db.get_tile_affordances(tile_id=tile_id)
+            d = yield self.db.get_texture_affordances(texture_id=texture_id)
         except:
             return err_with_logger(self.log, request, 'Failed to Query DB')
         try:
-            d = yield self.tile_affordanceJSON(d)
+            d = yield self.texture_affordanceJSON(d)
         except:
-            return err_with_logger(self.log, request, 'Bad JSON from db for tiles')
+            return err_with_logger(self.log, request, 'Bad JSON from db for textures')
 
         request.setHeader('Content-Type', 'application/json')
         return d
 
-    @app.route('/tiles', methods=['GET'])
+    @app.route('/textures', methods=['GET'])
     @inlineCallbacks
-    def tilesBase(self, request):
+    def texturesBase(self, request):
         str_args = dict_decode(request.args)
         game_name = str_args.get('game', ['default'])[0]
 
         try:
-            d = yield self.db.get_tiles_by_game(game_name)
+            d = yield self.db.get_textures_by_game(game_name)
         except:
             return err_with_logger(self.log, request, 'Failed to Query DB')
         try:
-            d = yield self.tileJSON(d)
+            d = yield self.textureJSON(d)
         except:
-            return err_with_logger(self.log, request, 'Bad JSON from db for tiles')
+            return err_with_logger(self.log, request, 'Bad JSON from db for textures')
         request.setHeader('Content-Type', 'application/json')
         return d
 
     #--------- Helpers ----------#
     @inlineCallbacks
-    def tiles_to_db(self, tiles, tagger_id):
+    def textures_to_db(self, textures, tagger_id):
         insert_count = 0
         skip_count = 0
         # first = True
-        for tile in tiles:
-            # Tiles not in DB have tile id -1
-            tile_id = tiles[tile].get('tile_id', -1)
-            if not isinstance(tile_id, int):
+        for texture in textures:
+            # textures not in DB have texture id -1
+            texture_id = textures[texture].get('texture_id', -1)
+            if not isinstance(texture_id, int):
                 try:
                     to_insert = {
-                        'tile_id': tile_id,
+                        'texture_id': texture_id,
                         'tagger_id': tagger_id,
-                        'solid': bool(int(tiles[tile]['solid'])),
-                        'movable': bool(int(tiles[tile]['movable'])),
-                        'destroyable': bool(int(tiles[tile]['destroyable'])),
-                        'dangerous': bool(int(tiles[tile]['dangerous'])),
-                        'gettable': bool(int(tiles[tile]['gettable'])),
-                        'portal': bool(int(tiles[tile]['portal'])),
-                        'usable': bool(int(tiles[tile]['usable'])),
-                        'changeable': bool(int(tiles[tile]['changeable'])),
-                        'ui': bool(int(tiles[tile]['ui'])),
-                        'permeable': bool(int(tiles[tile]['permeable'])),
+                        'solid': textures[texture]['solid'],
+                        'movable': textures[texture]['movable'],
+                        'destroyable': textures[texture]['destroyable'],
+                        'dangerous': textures[texture]['dangerous'],
+                        'gettable': textures[texture]['gettable'],
+                        'portal': textures[texture]['portal'],
+                        'usable': textures[texture]['usable'],
+                        'changeable': textures[texture]['changeable'],
+                        'ui': textures[texture]['ui'],
+                        'permeable': textures[texture]['permeable'],
                         'dt': datetime.now()
                     }
 
                     insert_count += 1
-                    yield self.db.insert_tile_tag(to_insert)
+                    yield self.db.insert_texture_tag(to_insert)
                 except:
                     self.log.error('Defer insert failure')
                     return defer.fail()
             else:
                 skip_count += 1
-        log_str = f'Inserted {insert_count} Tile Tags. SKIPPED {skip_count} Tiles. SUBMITTED: {len(tiles)}'
+        log_str = f'Inserted {insert_count} texture Tags. SKIPPED {skip_count} textures. SUBMITTED: {len(textures)}'
         # self.log.info(log_str)
         return log_str
 
