@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Unsupervised Game Image Segmentation Demo</title>
+	<meta name="author" content="Gerard Bentley">
+	<meta name="keywords" content="ai, computer vision, machine learning, pytorch, google colab">
+	<link href="https://unpkg.com/tailwindcss/dist/tailwind.min.css" rel="stylesheet">
+	<!--Replace with your tailwind.css once created-->
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css" rel="stylesheet">
+	<style>
+		.smooth {
+			transition: box-shadow 0.3s ease-in-out;
+		}
+
+		::selection {
+			background-color: aliceblue
+		}
+	</style>
+</head>
+
+<body class="bg-white font-sans leading-normal tracking-normal">
+
+	<!--Nav-->
+	<nav class="bg-gray-900 p-4 mt-0 w-full">
+		<div class="container mx-auto flex items-center">
+			<div class="flex text-white font-extrabold">
+				<a class="flex text-white text-base no-underline hover:text-white hover:no-underline" href="/">
+					<span class="md:w-auto md:block pl-1">FAIM Lab</span>
+				</a>
+			</div>
+		</div>
+	</nav>
+
+	<!--slide in nav-->
+	<div id="header" class="bg-white fixed w-full z-10 top-0 hidden animated" style="opacity: .95;">
+		<div class="bg-white">
+			<div class="flex flex-wrap items-center content-center">
+				<div class="flex w-1/2 justify-start text-white font-extrabold">
+					<a class="flex text-gray-900 no-underline hover:text-gray-900 hover:no-underline pl-2" href="/">
+						<span class="hidden w-0 md:w-auto md:block pl-1">FAIM Lab</span>
+					</a>
+				</div>
+			</div>
+
+		</div>
+		<!--Progress bar-->
+		<div id="progress" class="h-1 bg-white shadow"
+			style="background:linear-gradient(to right, #4dc0b5 var(--scroll), transparent 0);"></div>
+	</div>
+
+
+	<!--Title-->
+	<div class="text-center pt-8">
+		<h1 class="font-bold break-normal text-3xl md:text-5xl">Unsupervised Game Image Segmentation Demo</h1>
+	</div>
+
+	<!--image-->
+	<div class="container w-full p-2
+     max-w-6l mx-auto bg-white bg-gray-800 mt-4 rounded" style="background-image:url(''); height: 25vh;"></div>
+
+	<!--Container-->
+	<div class="container max-w-10xl mx-auto bg-gray-800 -mt-32">
+
+		<div class="mx-0 sm:mx-6">
+			<div class="flex-1-content-between p-8 bg-gray-400 rounded-t rounded-b-none overflow-hidden shadow-lg">
+				<p class="w-full text-gray-600 text-xs md:text-sm pt-6 px-6"></p>
+				<div class="w-full font-bold text-xl text-gray-900 px-4">iPython Notebook Demo 🚀
+				</div>
+				<p class="text-gray-800 font-sans text-base px-4 mb-5">
+					This is a brief demo of using a WNnet (Two U-Net's) convolutional neural network to perform
+					unsupervised semantic segmentation of video game images.
+				</p>
+				<p class="text-gray-800 font-sans text-base px-4 mb-5">
+					You can open the demo on google colab to run and change the code or download the repository from
+					Github / Gitlab
+				</p>
+
+				<p class="text-gray-800 font-sans text-base px-4">
+					Original W-Net Paper: <a class="underline text-blue-600"
+						href="https://arxiv.org/abs/1711.08506">https://arxiv.org/abs/1711.08506</a>
+				</p>
+				<form class="p-2" action="https://pom-itb-gitlab01.campus.pomona.edu/faim-lab/game-image-segmentation">
+					<button
+						class="bg-blue-500 hover:bg-blue-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center"
+						href="">
+						<img class="fill-current w-10 h-10 mr-2" src="/images/gitlab-icon-white.png">
+
+						<span>View on Gitlab</span>
+					</button>
+				</form>
+				<form class="p-2" action="https://github.com/gerardrbentley/unsupervised-game-segmentation">
+					<button
+						class="bg-blue-500 hover:bg-blue-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center"
+						href="">
+						<img class="fill-current w-10 h-10 mr-2" src="/images/github-icon-black.png">
+
+						<span>View on Github</span>
+					</button>
+				</form>
+
+
+			</div>
+			<!--Post Content-->
+
+			<script src="https://gist.github.com/gerardrbentley/3b1f9bdf073beff3b4f5c49620285dda.js"></script>
+
+
+			<!--/ Post Content-->
+
+			<!--Author-->
+			<div class="flex w-full items-center font-sans p-8 md:p-24">
+				<div class="flex-1">
+					<p class="text-base font-bold text-white md:text-xl leading-none">Made by Gerard Bentley</p>
+				</div>
+			</div>
+			<!--/Author-->
+
+		</div>
+
+	</div>
+
+
+	<footer class="bg-gray-900">
+		<div class="container max-w-6xl mx-auto flex items-center px-2 py-8">
+		</div>
+	</footer>
+
+
+	<script>
+		/* Progress bar */
+		//Source: https://alligator.io/js/progress-bar-javascript-css-variables/
+		var h = document.documentElement,
+			b = document.body,
+			st = 'scrollTop',
+			sh = 'scrollHeight',
+			progress = document.querySelector('#progress'),
+			scroll;
+		var scrollpos = window.scrollY;
+		var header = document.getElementById("header");
+
+		document.addEventListener('scroll', function () {
+
+			/*Refresh scroll % width*/
+			scroll = (h[st] || b[st]) / ((h[sh] || b[sh]) - h.clientHeight) * 100;
+			progress.style.setProperty('--scroll', scroll + '%');
+
+			/*Apply classes for slide in bar*/
+			scrollpos = window.scrollY;
+
+			if (scrollpos > 100) {
+				header.classList.remove("hidden");
+				header.classList.remove("fadeOutUp");
+				header.classList.add("slideInDown");
+			} else {
+				header.classList.remove("slideInDown");
+				header.classList.add("fadeOutUp");
+				header.classList.add("hidden");
+			}
+
+		});
+
+	</script>
+
+</body>
+
+</html>
