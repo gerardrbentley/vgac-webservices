@@ -12,8 +12,8 @@ variables:
   EXPERT_IMAGE_TAG: $CI_REGISTRY_IMAGE/expert:$CI_COMMIT_REF_SLUG
   SINGLE_TILE_IMAGE_TAG: $CI_REGISTRY_IMAGE/single-tile:$CI_COMMIT_REF_SLUG
   # Used to have staging and production of proxy and manager
-  REVERSE_PROXY_IMAGE_TAG: $CI_REGISTRY_IMAGE/reverse-proxy
-  DB_MANAGER_IMAGE_TAG: $CI_REGISTRY_IMAGE/db-manager
+  REVERSE_PROXY_IMAGE_TAG: $CI_REGISTRY_IMAGE/reverse-proxy:production
+  DB_MANAGER_IMAGE_TAG: $CI_REGISTRY_IMAGE/db-manager:production
   # Repeat here for compose pull and compose up (try to get ^ images in here better)
   DOCKER_COMPOSE_ENV: >
     POSTGRES_USER=$POSTGRES_USER
@@ -21,7 +21,7 @@ variables:
     POSTGRES_PASSWORD=$POSTGRES_PASSWORD
     POSTGRES_PORT=$POSTGRES_PORT
     DBAPI_IMAGE=$CI_REGISTRY_IMAGE/dbapi:$CI_COMMIT_REF_SLUG
-    REVERSE_PROXY_IMAGE=$CI_REGISTRY_IMAGE/reverse-proxy
+    REVERSE_PROXY_IMAGE=$CI_REGISTRY_IMAGE/reverse-proxy:production
     EXPERT_IMAGE=$CI_REGISTRY_IMAGE/expert:$CI_COMMIT_REF_SLUG
     SINGLE_TILE_IMAGE=$CI_REGISTRY_IMAGE/single-tile:$CI_COMMIT_REF_SLUG
     STAGING_DIR=$STAGING_DIR
@@ -134,12 +134,10 @@ deploy-staging:
      echo 'Docker login'
      docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY || exit 1
      echo 'Pull images'
-     $DOCKER_COMPOSE_ENV \ 
-       docker-compose -f docker-compose.staging.yml pull
+     $DOCKER_COMPOSE_ENV docker-compose -f docker-compose.staging.yml pull
      echo 'Using docker-compose up'
      echo 'Deploying TARGET: $CI_ENVIRONMENT_SLUG'
-     $DOCKER_COMPOSE_ENV \
-       docker-compose -f docker-compose.staging.yml up -d
+     $DOCKER_COMPOSE_ENV docker-compose -f docker-compose.staging.yml up -d
      echo 'Staging Up and Serving'"
 
 deploy-prod:
@@ -169,12 +167,10 @@ deploy-prod:
      echo 'Docker login'
      docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY || exit 1
      echo 'Pull images'
-     $DOCKER_COMPOSE_ENV \
-       docker-compose pull
+     $DOCKER_COMPOSE_ENV docker-compose pull
      echo 'Pull db manager (not in compose)'
      docker pull $DB_MANAGER_IMAGE_TAG
      echo 'Using docker-compose up'
      echo 'Deploying TARGET: $CI_ENVIRONMENT_SLUG'
-     $DOCKER_COMPOSE_ENV \
-       docker-compose up -d
+     $DOCKER_COMPOSE_ENV docker-compose up -d
      echo 'production serving'"
