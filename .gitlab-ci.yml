@@ -14,8 +14,37 @@ variables:
   # Used to have staging and production of proxy and manager
   REVERSE_PROXY_IMAGE_TAG: $CI_REGISTRY_IMAGE/reverse-proxy
   DB_MANAGER_IMAGE_TAG: $CI_REGISTRY_IMAGE/db-manager
-  
+  # Repeat here for compose pull and compose up (try to get ^ images in here better)
+  DOCKER_COMPOSE_ENV: >
+    POSTGRES_USER=$POSTGRES_USER
+    POSTGRES_DB=$POSTGRES_DB
+    POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+    POSTGRES_PORT=$POSTGRES_PORT
+    DBAPI_IMAGE=$CI_REGISTRY_IMAGE/dbapi:$CI_COMMIT_REF_SLUG
+    REVERSE_PROXY_IMAGE=$CI_REGISTRY_IMAGE/reverse-proxy
+    EXPERT_IMAGE=$CI_REGISTRY_IMAGE/expert:$CI_COMMIT_REF_SLUG
+    SINGLE_TILE_IMAGE=$CI_REGISTRY_IMAGE/single-tile:$CI_COMMIT_REF_SLUG
+    STAGING_DIR=$STAGING_DIR
+    TARGET=$CI_ENVIRONMENT_SLUG
+    CERTS_DIR=$CERTS_DIR
+
+
+# Gitlab fake job -> not repeating setup code 
+.kaniko_setup:
+  retry:
+    max: 2
+    when: runner_system_failure
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    # Connect to a dockerhub user registry (AUTH is base64 username:token)
+    # - echo "{\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"$GERARD_DOCKER_AUTH\"}}}" > /kaniko/.docker/config.json
+    - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
+
 reverse_proxy:
+  extends: .kaniko_setup # Adds contentents of kaniko_setup hidden job .kaniko_fake_job above
   rules:
     - if: '$CI_COMMIT_BRANCH == "production"'
       changes:
@@ -23,79 +52,51 @@ reverse_proxy:
       - Dockerfile-faim-nginx
       - static/**/*
       when: always
-  image:
-    name: gcr.io/kaniko-project/executor:debug
-    entrypoint: [""]
   script:
-    - pwd
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    # Connect to a dockerhub user registry (AUTH is base64 username:token)
-    # - echo "{\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"$GERARD_DOCKER_AUTH\"}}}" > /kaniko/.docker/config.json
-    - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile-faim-nginx --destination $REVERSE_PROXY_IMAGE_TAG
   stage: build_proxy
 
-vgac_dbapi:
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "production"'
-      changes:
-      - dbapi/**/*
-      when: always
-  image:
-    name: gcr.io/kaniko-project/executor:debug
-    entrypoint: [""]
-  script:
-    - cd dbapi
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
-    - /kaniko/executor --context $CI_PROJECT_DIR/dbapi --dockerfile $CI_PROJECT_DIR/dbapi/Dockerfile-dbapi --destination $DBAPI_IMAGE_TAG
-  stage: build_api
-
 db_manager:
+  extends: .kaniko_setup
   rules:
     - if: '$CI_COMMIT_BRANCH == "production"'
       changes:
       - db_manager/**/*
       when: always
-  image:
-    name: gcr.io/kaniko-project/executor:debug
-    entrypoint: [""]
   script:
-    - cd db_manager
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
     - /kaniko/executor --context $CI_PROJECT_DIR/db_manager --dockerfile $CI_PROJECT_DIR/db_manager/Dockerfile-db-manager --destination $DB_MANAGER_IMAGE_TAG
   stage: build_manager
 
+vgac_dbapi:
+  extends: .kaniko_setup
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "production"'
+      changes:
+      - dbapi/**/*
+      when: always
+  script:
+    - /kaniko/executor --context $CI_PROJECT_DIR/dbapi --dockerfile $CI_PROJECT_DIR/dbapi/Dockerfile-dbapi --destination $DBAPI_IMAGE_TAG
+  stage: build_api
+
 expert:
+  extends: .kaniko_setup
   rules:
     - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "production"'
       changes:
       - expert/**/*
       when: always
-  image:
-    name: gcr.io/kaniko-project/executor:debug
-    entrypoint: [""]
   script:
-    - cd expert
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
     - /kaniko/executor --context $CI_PROJECT_DIR/expert --dockerfile $CI_PROJECT_DIR/expert/Dockerfile-expert --destination $EXPERT_IMAGE_TAG
   stage: build_expert
  
 single:
+  extends: .kaniko_setup
   rules:
     - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "production"'
       changes:
       - single_tile_tagging/**/*
       when: always
-  image:
-    name: gcr.io/kaniko-project/executor:debug
-    entrypoint: [""]
   script:
-    - cd single_tile_tagging
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - cat $CA_PUB_CERT_CHAIN >> /kaniko/ssl/certs/ca-certificates.crt
     - /kaniko/executor --context $CI_PROJECT_DIR/single_tile_tagging --dockerfile $CI_PROJECT_DIR/single_tile_tagging/Dockerfile-single-tile --destination $SINGLE_TILE_IMAGE_TAG
   stage: build_single
 
@@ -109,6 +110,7 @@ deploy-staging:
     name: staging
     url: https://vgac.cs.pomona.edu/staging/
   script: |
+    echo $DOCKER_COMPOSE_ENV
     apk update; apk add openssh-client
     chmod 600 $PRIVATE_KEY
     scp -i $PRIVATE_KEY \
@@ -132,24 +134,11 @@ deploy-staging:
      echo 'Docker login'
      docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY || exit 1
      echo 'Pull images'
-     DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
-     REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
-     EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
-     SINGLE_TILE_IMAGE=$SINGLE_TILE_IMAGE_TAG \
+     $DOCKER_COMPOSE_ENV \ 
        docker-compose -f docker-compose.staging.yml pull
      echo 'Using docker-compose up'
      echo 'Deploying TARGET: $CI_ENVIRONMENT_SLUG'
-     POSTGRES_USER=$POSTGRES_USER \
-       POSTGRES_DB=$POSTGRES_DB \
-       POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
-       POSTGRES_PORT=$POSTGRES_PORT \
-       DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
-       REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
-       EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
-       SINGLE_TILE_IMAGE=$SINGLE_TILE_IMAGE_TAG \
-       STAGING_DIR=$STAGING_DIR \
-       TARGET=$CI_ENVIRONMENT_SLUG \
-       CERTS_DIR=$CERTS_DIR \
+     $DOCKER_COMPOSE_ENV \
        docker-compose -f docker-compose.staging.yml up -d
      echo 'Staging Up and Serving'"
 
@@ -163,6 +152,7 @@ deploy-prod:
     url: https://vgac.cs.pomona.edu
   image: bash
   script: |
+    echo $DOCKER_COMPOSE_ENV
     apk update; apk add openssh-client
     chmod 600 $PRIVATE_KEY
     scp -i $PRIVATE_KEY \
@@ -179,26 +169,12 @@ deploy-prod:
      echo 'Docker login'
      docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY || exit 1
      echo 'Pull images'
-     DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
-     REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
-     DB_MANAGER_IMAGE=$DB_MANAGER_IMAGE_TAG \
-     EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
-     SINGLE_TILE_IMAGE=$SINGLE_TILE_IMAGE_TAG \
+     $DOCKER_COMPOSE_ENV \
        docker-compose pull
      echo 'Pull db manager (not in compose)'
      docker pull $DB_MANAGER_IMAGE_TAG
      echo 'Using docker-compose up'
      echo 'Deploying TARGET: $CI_ENVIRONMENT_SLUG'
-     POSTGRES_USER=$POSTGRES_USER \
-       POSTGRES_DB=$POSTGRES_DB \
-       POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
-       POSTGRES_PORT=$POSTGRES_PORT \
-       DBAPI_IMAGE=$DBAPI_IMAGE_TAG \
-       REVERSE_PROXY_IMAGE=$REVERSE_PROXY_IMAGE_TAG \
-       EXPERT_IMAGE=$EXPERT_IMAGE_TAG \
-       SINGLE_TILE_IMAGE=$SINGLE_TILE_IMAGE_TAG \
-       STAGING_DIR=$STAGING_DIR \
-       TARGET=$CI_ENVIRONMENT_SLUG \
-       CERTS_DIR=$CERTS_DIR \
+     $DOCKER_COMPOSE_ENV \
        docker-compose up -d
      echo 'production serving'"
