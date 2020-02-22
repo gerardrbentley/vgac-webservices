@@ -96,7 +96,7 @@ class SingleTileTagger(object):
         random.shuffle(choice_keys)
 
         for tile_key in choice_keys:
-            tile_id = tiles_to_tag[tile_key]['tile_id']
+            tile_id = tiles_to_tag[tile_key]['texture_id']
             if not isinstance(tile_id, int):
                 break
             self.log.info(f'bad id, test idx: {tile_key}, test id: {tile_id}')
