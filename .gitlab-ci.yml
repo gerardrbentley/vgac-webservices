@@ -62,6 +62,7 @@ db_manager:
       changes:
       - db_manager/**/*
       when: always
+  script:
     - /kaniko/executor --context $CI_PROJECT_DIR/db_manager --dockerfile $CI_PROJECT_DIR/db_manager/Dockerfile-db-manager --destination $DB_MANAGER_IMAGE_TAG
   stage: build_manager
 
@@ -83,6 +84,7 @@ expert:
       changes:
       - expert/**/*
       when: always
+  script:
     - /kaniko/executor --context $CI_PROJECT_DIR/expert --dockerfile $CI_PROJECT_DIR/expert/Dockerfile-expert --destination $EXPERT_IMAGE_TAG
   stage: build_expert
  
@@ -93,6 +95,7 @@ single:
       changes:
       - single_tile_tagging/**/*
       when: always
+  script:
     - /kaniko/executor --context $CI_PROJECT_DIR/single_tile_tagging --dockerfile $CI_PROJECT_DIR/single_tile_tagging/Dockerfile-single-tile --destination $SINGLE_TILE_IMAGE_TAG
   stage: build_single
 
