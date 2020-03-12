@@ -4,10 +4,10 @@
 <head>
     <meta charset="utf-8">
 
-    <title>Video Game Affordanes</title>
+    <title>Single Tile Tagging</title>
     <meta name="description" content="The HTML5 Herald">
     <meta name="author" content="SitePoint">
-
+    <link rel="icon" href="https://previews.123rf.com/images/xsycho/xsycho1809/xsycho180900009/109031080-pink-planet-neon-icon-for-web-glowing-sign-vector.jpg">
     <link href="/css/single-tile1.css" rel="stylesheet">
     <script src = 'https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js' ></script>
 </head>
@@ -16,9 +16,10 @@
     </div>
 
     <link href="https://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
+    
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-    <div class="col-md-12">
-        <div class="info">
+    <div class="col-md-12" id = "information">
+        <div class ="info">
         <i class="icon-info-sign"></i>
         <span style = "font-size:36px;cursor:pointer; position: absolute; top: -11px; left:-5px; z-index: -1;"> &#9898;</span>
         <span class="extra-info">
@@ -56,7 +57,7 @@
       </div>
 
 
-    <img id ="avatar" src="/images/fml1.png" height="590" width = "590">
+    <img id ="avatar" src="/images/fml1.png">
     
     <div id = "title0" class = "container1">
             <img id = "pic1" src = "/images/stt3.png"> 
@@ -72,19 +73,28 @@
         <img id = "tile_now" src = "/images/example.png">
     </div> 
     <div id = "buttons">
-        <input id = "b_solid" type = "button" value = "solid">
-        
+        <input id = "b_solid" type = "button" value = "solid"> 
+        <div id="dot_solid"></div>
         <input id = "b_movable" type = "button" value = "movable">
+        <div id="dot_movable"></div>
         <input id = "b_destroyable" type = "button" value = "destroyable">
+        <div id="dot_destroyable"></div>
         <input id = "b_dangerous" type = "button" value = "dangerous">
+        <div id="dot_dangerous"></div>
         <input id = "b_gettable" type = "button" value = "gettable">
+        <div id="dot_gettable"></div>
         <input id = "b_portal" type = "button" value = "portal">
+        <div id="dot_portal"></div>
         <input id = "b_usable" type = "button" value = "usable">
+        <div id="dot_usable"></div>
         <input id = "b_changeable" type = "button" value = "changeable">
+        <div id="dot_changeable"></div>
         <input id = "b_ui" type = "button" value = "ui">
+        <div id="dot_ui"></div>
         <input id = "b_permeable" type = "button" value = "permeable">
+        <div id="dot_permeable"></div>
         <input id = "b_save" type = "button" value = "save">
-        <input id = "b_comment" type = "button" value = "comment">
+        <input id = "b_comment" type = "button" value = "comment" onclick = "comment()">
         <input id = "b_context" type = "button" value = "context">
         <input id = "b_reset" type = "button" value = "reset">
     </div>
@@ -99,7 +109,7 @@
         </div>
     </div>
 
-    <script src="/staging/js/single-tile1.js"></script>
+    <script src="/js/single-tile1.js"></script>
 </body>
 
 </html>
