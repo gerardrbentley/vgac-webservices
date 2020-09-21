@@ -177,6 +177,9 @@ var canvas_changeable2 = document.getElementById('myCanvas_changeable2')
 var canvas_ui2 = document.getElementById('myCanvas_ui2')
 var canvas_list2 = [canvas_solid2, canvas_movable2, canvas_destroyable2, canvas_dangerous2, canvas_gettable2, canvas_portal2, canvas_usable2, canvas_changeable2, canvas_ui2];
 */
+var canvas_for_drawing = document.getElementById('myCanvas_drawing');
+
+
 var canvas_solid = document.getElementById('myCanvas_solid');//set the URL from json later
 var canvas_movable = document.getElementById('myCanvas_movable')
 var canvas_destroyable = document.getElementById('myCanvas_destroyable')
@@ -220,6 +223,7 @@ var canvas_list = [canvas_solid, canvas_movable, canvas_destroyable, canvas_dang
 */
 
 //__________________________________________________________________________________checkboxes
+/*
 var checkQ = document.getElementById("cbQ");
 checkQ.addEventListener('change', function(e)
 {
@@ -281,7 +285,7 @@ checkF.addEventListener('change', function(e)
     checkF.checked = !checkF.checked
     simulate(checkF, 70, "F");
 });
-
+*/
 //_____________________________________________________________________________________
 /*
 ─────────────────────────────────────────────────────────────────────
@@ -334,9 +338,10 @@ $(document).on('click', '#bQ', function() {
     canvas_solid.height = 300;
   });*/
 
-var name_big = document.getElementById("name_big");
+//var name_big = document.getElementById("name_big");
 
 
+/*
 var drawinn = document.getElementById("drawing_container");
 var canvas_drawinn = document.getElementById("myCanvas_drawing");
 draw_b(0, 0, canvas_drawinn, 808, 712);
@@ -390,33 +395,72 @@ var bC = document.getElementById("bC");
 bC.onclick = enlarge_aff;
 var bF = document.getElementById("bF");
 bF.onclick = enlarge_aff;
-
-var b_reset = document.getElementById("b_reset");
-b_reset.style.backgroundColor = "red";
-b_reset.style.fontSize = "x-large";
-b_reset.style.fontVariant = "small-caps";
-
-b_reset.onclick = function()
+*/
+var button_instructions = document.getElementById("button_instructions");
+button_instructions.onclick = function()
 {
-    simulate(b_reset, 27, "ESC");
+    document.getElementById("myInstructions").style.width = "100%";
+}
+
+var button_reset = document.getElementById("button_reset");
+button_reset.onclick = function()
+{
+    simulate(button_reset, 27, "ESC");
 };
 
-var b_save = document.getElementById("b_save");
-b_save.style.backgroundColor = "green";
-b_save.style.fontSize = "x-large";
-b_save.style.fontVariant = "small-caps";
-b_save.onclick = function()
+var button_done = document.getElementById("button_done");
+button_done.onclick = function()
 {
-    simulate(b_save, 32, "Space");
+    simulate(button_done, 32, "Space");
     alert("Saved!");
 };
 
+var button_square = document.getElementById("button_square");
+button_square.onclick = function()
+{
+    if(!isrect)
+    {
+        isrect++;
+    }
+    else
+    {
+        isrect--;
+    }
+};
+
+function comment() 
+{
+    var cmt = prompt("Please enter your comment here", "");
+    if (cmt != null) 
+    {
+      //save here
+      alert("Saved");
+    }
+}
+
+function closeInstr() 
+{
+  document.getElementById("myInstructions").style.width = "0";
+}
+
+
+function openNav() 
+{
+  document.getElementById("mySidenav").style.width = "250px";
+}
+
+function closeNav() 
+{
+  document.getElementById("mySidenav").style.width = "0";
+}
+
+
 var check_grid_on = 0;
-// var b_grid = document.getElementById("b_grid");
-// b_grid.style.backgroundColor = "gray";
-// b_grid.style.fontSize = "x-large";
-// b_grid.style.fontVariant = "small-caps";
-// b_grid.onclick = function()
+// var button_grid = document.getElementById("button_grid");
+// button_grid.style.backgroundColor = "gray";
+// button_grid.style.fontSize = "x-large";
+// button_grid.style.fontVariant = "small-caps";
+// button_grid.onclick = function()
 // {
 //     if(!check_grid_on)
 //     {
@@ -429,20 +473,20 @@ var check_grid_on = 0;
 //     }
 // };
 
-// var b_grid_save = document.getElementById("b_grid_save");
-// b_grid_save.style.backgroundColor = "darkgreen";
-// b_grid_save.style.fontSize = "x-large";
-// b_grid_save.style.fontVariant = "small-caps";
-// b_grid_save.onclick = function()
+// var button_grid_save = document.getElementById("button_grid_save");
+// button_grid_save.style.backgroundColor = "darkgreen";
+// button_grid_save.style.fontSize = "x-large";
+// button_grid_save.style.fontVariant = "small-caps";
+// button_grid_save.onclick = function()
 // {
 //     grid_checked = 1;
 // };
 
-// var b_grid_reset = document.getElementById("b_grid_reset");
-// b_grid_reset.style.backgroundColor = "darkred";
-// b_grid_reset.style.fontSize = "x-large";
-// b_grid_reset.style.fontVariant = "small-caps";
-// b_grid_reset.onclick = function()
+// var button_grid_reset = document.getElementById("button_grid_reset");
+// button_grid_reset.style.backgroundColor = "darkred";
+// button_grid_reset.style.fontSize = "x-large";
+// button_grid_reset.style.fontVariant = "small-caps";
+// button_grid_reset.onclick = function()
 // {
 //     check_grid_on = 0;
 //     grid_movex = 0;
@@ -454,11 +498,11 @@ var check_grid_on = 0;
 //     }
 // };
 //
-// var b_grid_up = document.getElementById("b_grid_up");
-// b_grid_up.style.backgroundColor = 'rgb(100, 100, 100)';
-// b_grid_up.style.fontSize = "x-large";
-// b_grid_up.style.fontVariant = "small-caps";
-// b_grid_up.onclick = function()
+// var button_grid_up = document.getElementById("button_grid_up");
+// button_grid_up.style.backgroundColor = 'rgb(100, 100, 100)';
+// button_grid_up.style.fontSize = "x-large";
+// button_grid_up.style.fontVariant = "small-caps";
+// button_grid_up.onclick = function()
 // {
 //     grid_movey--;
 //     for (var canvas_id = 0; canvas_id < canvas_list.length; canvas_id++)
@@ -470,11 +514,11 @@ var check_grid_on = 0;
 //
 // };
 //
-// var b_grid_down = document.getElementById("b_grid_down");
-// b_grid_down.style.backgroundColor = "gray";
-// b_grid_down.style.fontSize = "x-large";
-// b_grid_down.style.fontVariant = "small-caps";
-// b_grid_down.onclick = function()
+// var button_grid_down = document.getElementById("button_grid_down");
+// button_grid_down.style.backgroundColor = "gray";
+// button_grid_down.style.fontSize = "x-large";
+// button_grid_down.style.fontVariant = "small-caps";
+// button_grid_down.onclick = function()
 // {
 //     grid_movey++;
 //     for (var canvas_id = 0; canvas_id < canvas_list.length; canvas_id++)
@@ -486,11 +530,11 @@ var check_grid_on = 0;
 //
 // };
 //
-// var b_grid_left = document.getElementById("b_grid_left");
-// b_grid_left.style.backgroundColor = "gray";
-// b_grid_left.style.fontSize = "x-large";
-// b_grid_left.style.fontVariant = "small-caps";
-// b_grid_left.onclick = function()
+// var button_grid_left = document.getElementById("button_grid_left");
+// button_grid_left.style.backgroundColor = "gray";
+// button_grid_left.style.fontSize = "x-large";
+// button_grid_left.style.fontVariant = "small-caps";
+// button_grid_left.onclick = function()
 // {
 //     grid_movex--;
 //     for (var canvas_id = 0; canvas_id < canvas_list.length; canvas_id++)
@@ -502,11 +546,11 @@ var check_grid_on = 0;
 //
 // };
 //
-// var b_grid_right = document.getElementById("b_grid_right");
-// b_grid_right.style.backgroundColor = "gray";
-// b_grid_right.style.fontSize = "x-large";
-// b_grid_right.style.fontVariant = "small-caps";
-// b_grid_right.onclick = function()
+// var button_grid_right = document.getElementById("button_grid_right");
+// button_grid_right.style.backgroundColor = "gray";
+// button_grid_right.style.fontSize = "x-large";
+// button_grid_right.style.fontVariant = "small-caps";
+// button_grid_right.onclick = function()
 // {
 //     grid_movex++;
 //     for (var canvas_id = 0; canvas_id < canvas_list.length; canvas_id++)
@@ -581,16 +625,18 @@ function draw(x, y, z)
         // canvas-unsupported code here
     }
 }
-function draw_b(x, y, z, x_a, x_b)
+function draw_b(x, y, z)
 {
 
     if (z.getContext)
     {
         var ctx = z.getContext('2d');
+        var width = z.width;
+        var height = z.height;
         //drawing code here
         ctx.lineWidth = 3;
-        ctx.fillStyle = "rgb(0, 0, 0)";
-        ctx.fillRect (x, y, x_a, x_b);
+        ctx.fillStyle = "rgb(0, 0, 0, 0.7)";
+        ctx.fillRect (x, y, width, height);
     }
     else
     {
@@ -630,10 +676,8 @@ function draw_picture(x, z, size_x, size_y)
     }
 }
 
-for (var canvas_id = 0; canvas_id < canvas_list.length; canvas_id++)
-{
-    draw_b(0, 0, canvas_list[canvas_id], 256, 224);
-}
+draw_b(0, 0, canvas_for_drawing); //draw black on top of canvas
+
 //__________________________________________________________________________________
 /*
 ─────────────────────────────────────────────────────────────
@@ -766,9 +810,15 @@ for (var canvas_id = 0; canvas_id < canvas_list.length; canvas_id++)
 
 var shift_down = 0;
 var mouseDown = 0;
-var canvas_color = 'white';
 var sizex = 4;
-var sizey = 4;
+var sizey = 2;
+var firstlog = 1;
+var rect_x1 = 0;
+var rect_y1 = 0;
+var rect_x2 = 0;
+var rect_y2 = 0;
+var isrect = 0;
+
 
 
 
@@ -779,21 +829,54 @@ function draw_mouse_affordances(tmp, canvas, e)
     //var canvas_check = document.elementFromPoint(pos.x, pos.y);
 
     if(mouseDown)
-    {
+    {   
+        if (isrect)
+        {
+            if (firstlog == 1)
+            {
+
+                console.log(pos);
+                rect_x1 = pos.x;
+                rect_y1 = pos.y;
+                firstlog = 0;
+            }
+        }
         context.fillStyle = color;
-    	context.fillRect(pos.x - ((pos.x - grid_movex) % sizex), pos.y - ((pos.y - grid_movey) % sizey), sizex, sizey);
+    	context.fillRect(pos.x - ((pos.x /*- grid_movex*/) % sizex), pos.y - ((pos.y /*- grid_movey*/) % sizey), sizex, sizey);
+    }
+    if (!mouseDown)
+    {
+        if (isrect)
+        {
+            if (firstlog == 0)
+            {
+                console.log(pos);
+                rect_x2 = pos.x;
+                rect_y2 = pos.y;
+                firstlog = 1;
+                context.fillStyle = "white";
+                context.fillRect(rect_x1, rect_y1, ((rect_x2-rect_x1)+4), (rect_y2-rect_y1));
+            }
+        }
     }
 }
 
 for (var canvas_id = 0; canvas_id < canvas_list.length; canvas_id++)
 {
-    canvas_list[canvas_id].onmousedown = function()
+    canvas_for_drawing.onmousedown = function()
     {
         event.preventDefault();
         if(event.button == 0)
         {
             ++mouseDown;
-            color = "white";
+            if (isrect)
+            {
+                color = "rgba(255, 255, 255, 0)";
+            }
+            else
+            {
+                color = "white";
+            }        
         }
         if(event.button == 2)
         {
@@ -801,14 +884,21 @@ for (var canvas_id = 0; canvas_id < canvas_list.length; canvas_id++)
             color = "black";
         }
     }
-    canvas_list[canvas_id].onmouseup = function()
+    canvas_for_drawing.onmouseup = function()
     {
         event.preventDefault();
         if(event.button == 0)
         {
 
             --mouseDown;
-            color = "white";
+            if (isrect)
+            {
+                color = "rgba(255, 255, 255, 0)";
+            }
+            else
+            {
+                color = "white";
+            } 
         }
         if(event.button == 2)
         {
@@ -817,49 +907,13 @@ for (var canvas_id = 0; canvas_id < canvas_list.length; canvas_id++)
             color = "black";
         }
     }
-    window.addEventListener('mousemove', draw_mouse_affordances.bind(null, event, canvas_list[canvas_id]), false);
-    window.addEventListener('mousedown', draw_mouse_affordances.bind(null, event, canvas_list[canvas_id]), false);
-    canvas_list[canvas_id].addEventListener('contextmenu', event => event.preventDefault());//block rightclick on 'em
+    window.addEventListener('mousemove', draw_mouse_affordances.bind(null, event, canvas_for_drawing), false);
+    window.addEventListener('mousedown', draw_mouse_affordances.bind(null, event, canvas_for_drawing), false);
+    canvas_for_drawing.addEventListener('contextmenu', event => event.preventDefault());//block rightclick on 'em
 }
 //----------------------------------------------------------------------------
-canvas_drawinn.onmousedown = function()
-{
-    event.preventDefault();
-    if(event.button == 0)
-    {
-        ++mouseDown;
-        color = "white";
-    }
-    if(event.button == 2)
-    {
-        ++mouseDown;
-        color = "black";
-    }
-}
-canvas_drawinn.onmouseup = function()
-{
-    event.preventDefault();
-    if(event.button == 0)
-    {
 
-        --mouseDown;
-        color = "white";
-    }
-    if(event.button == 2)
-    {
-
-        --mouseDown;
-        color = "black";
-    }
-}
-window.addEventListener('mousemove', draw_mouse_affordances.bind(null, event, canvas_drawinn), false);
-window.addEventListener('mousedown', draw_mouse_affordances.bind(null, event, canvas_drawinn), false);
-canvas_drawinn.addEventListener('contextmenu', event => event.preventDefault());//block rightclick on 'em
 //----------------------------------------------------------------------------
-
-
-
-
 
 function getMousePos(canvas, evt)
 {
@@ -869,6 +923,57 @@ function getMousePos(canvas, evt)
         y: (evt.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
     };
 };
+
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+/*var canvas = new fabric.Canvas('myCanvas_drawing', { selection: false });
+
+var rect, isDown, origX, origY;
+
+canvas.on('mouse:down', function(o){
+    isDown = true;
+    var pointer = canvas.getPointer(o.e);
+    origX = pointer.x;
+    origY = pointer.y;
+    var pointer = canvas.getPointer(o.e);
+    rect = new fabric.Rect({
+        left: origX,
+        top: origY,
+        originX: 'left',
+        originY: 'top',
+        width: pointer.x-origX,
+        height: pointer.y-origY,
+        angle: 0,
+        fill: 'rgba(255,0,0,0.5)',
+        transparentCorners: false
+    });
+    canvas.add(rect);
+});
+
+canvas.on('mouse:move', function(o){
+    if (!isDown) return;
+    var pointer = canvas.getPointer(o.e);
+    
+    if(origX>pointer.x){
+        rect.set({ left: Math.abs(pointer.x) });
+    }
+    if(origY>pointer.y){
+        rect.set({ top: Math.abs(pointer.y) });
+    }
+    
+    rect.set({ width: Math.abs(origX - pointer.x) });
+    rect.set({ height: Math.abs(origY - pointer.y) });
+    
+    
+    canvas.renderAll();
+});
+
+canvas.on('mouse:up', function(o){
+  isDown = false;
+});
+*/
+
+
 
 //__________________________________________________________________________________
 /*

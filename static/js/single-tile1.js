@@ -181,6 +181,7 @@ b_context.style.fontVariant = "small-caps";
 var canvas_drawinn = document.getElementById("myCanvas_drawing");
 b_context.onclick = function()
 {
+    drawinn.style.display = "block";
     poses = mydata["output"]["tile"]["locations"];
     for(i = 0; i < Object.keys(poses).length; i++)
     {
@@ -191,7 +192,7 @@ b_context.onclick = function()
         draw(pos_x, pos_y, canvas_drawinn);
     }
     drawer.src = mydata["output"]["image"];
-    drawinn.style.display = "block";
+    
 };
 
 
@@ -202,24 +203,22 @@ bClose.onclick = function()
     drawinn.style.display = "none";
 };
 
+var affordances = ["solid", "movable", "destroyable", "dangerous", "gettable", "portal", "usable", "changeable", "ui", "permeable"];
+
 var b_reset = document.getElementById("b_reset");
 b_reset.style.backgroundColor = "rgb(6,100,105)";
 b_reset.style.fontSize = "x-large";
 b_reset.style.fontVariant = "small-caps";
 b_reset.onclick = function()
 {
+  
+  for (var i = 0; i < 10; i++)
+  {
+      output[affordances[i]] = 0;
+      window[affordances[i]+"_dot"].style.backgroundColor = "red";
+      console.log(output[affordances[i]]);
+  }
   alert("reset successful!");
-  output["solid"] = 0;
-  output["movable"] = 0;
-  output["destroyable"] = 0;
-  output["dangerous"] = 0;
-  output["gettable"] = 0;
-  output["portal"] = 0;
-  output["usable"] = 0;
-  output["changeable"] = 0;
-  output["ui"] = 0;
-  output["permeable"] = 0;
- 
 };
 
 /*
@@ -273,6 +272,11 @@ var $ = window.jQuery;
 window.addEventListener('load', function()
 {
     console.log('on load')
+    for (var i = 0; i < 10; i++)
+    {
+        output[affordances[i]] = 0;
+    }
+    /*
     output["solid"] = 0;
     output["movable"] = 0;
     output["destroyable"] = 0;
@@ -283,6 +287,7 @@ window.addEventListener('load', function()
     output["changeable"] = 0;
     output["ui"] = 0;
     output["permeable"] = 0;
+    */
     fetch_data();
 });
 

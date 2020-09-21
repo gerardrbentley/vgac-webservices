@@ -7,21 +7,56 @@
     <title>Video Game Affordanes</title>
     <meta name="description" content="The HTML5 Herald">
     <meta name="author" content="SitePoint">
-
+    <link href="/css/style.css" rel="stylesheet">
     <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
 </head>
 
 <body>
-
-
-    <link href="/css/style.css" rel="stylesheet">
+    
     <div class="header">
-        <div id="title">
-            <h1>Video Game Affordances</h1>
+        <div id="tagger_id" tagger="docker-tagger"> </div>
+        <img id="screenshot_preview" src="/images/screen_example.png">
+        <canvas id="myCanvas" cssstyle="border:1px solid #000000">
+        </canvas>
+
+        <img id = "bkg" src = "/images/expert_background_final.png">
+
+        <img id=texture src="/images/example.png">
+
+        <img id="drawer" src = "/images/screen_example.png">
+
+        <canvas id = "myCanvas_drawing" affordance_id = "-1" cssstyle="border:1px solid #000000">
+        </canvas>
+        <input id = "square_btn" type = "button" value = "Solid">
+        <input id = "button_reset" type = "button" value = "Reset">
+        <input id = "button_done" type = "button" value = "Done">
+        <input id = "button_instructions" type = "button" value = "Instructions">
+        <input id = "tiles_count" type = "button" value = "0/X Tiles">
+        <input id = "button_comment" type = "button" value = "Comment" onclick = "comment()">
+        <input id = "button_draw" type = "button" value = "Draw">
+        <input id = "button_square" type = "button" value = "Square">
+
+        <div id="myInstructions" class="instr">
+            <a href="javascript:void(0)" class="closebtn_i" onclick="closeInstr()">&times;</a>
+            <h2 align="center" style="color: white; position:relative; top:-40px; font-size:50px;">Instructions</h2>
+            <p align="left" style="color: white; position:relative; left:200px; font-size:20px">1. Click on all categories that apply to the tile in the middle of the page.</p>
+            <p align="left" style="color: white; position:relative; left:200px; font-size:20px">2. Click "context" if you want to see this tile in a bigger image.</p>
+            <p align="left" style="color: white; position:relative; left:200px; font-size:20px">3. Click on "reset" if you made a mistake selecting. It will reset all your selections.</p>
+            <p align="left" style="color: white; position:relative; left:200px; font-size:20px">4. Click on "comment" if none of the categories apply. THen you will be able to type your own category.</p>
+            <p align="left" style="color: white; position:relative; left:200px; font-size:20px">5. Click on "save" once you are done with selection.</p>
+            <p align="left" style="color: white; position:relative; left:200px; font-size:20px">6. You can access instruction menu anytime by hovering on "I" icon right to "context" button.</p>
         </div>
 
-        <div id="tagger_id" tagger="docker-tagger"> </div>
+        <div id="mySidenav" class="sidenav">
+            <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+            <a href="#">About</a> <!--add webpages here instead of hashtag-->
+            <a href="#">Services</a>
+            <a href="#">Contact</a>
+        </div>
 
+        <span style="font-size:62px;cursor:pointer; position: absolute; top: 30px; left: 10px; width: 5%; color: #000000;" onclick="openNav()">☰</span>
+
+        <!--
         <div>
             <p>Keyboard Controls</p>
             <p>Below is a random screenshot from a game. On the right (if your browser is large enough) is the image
@@ -50,7 +85,8 @@
 
         </div>
     </div>
-
+    -->
+<!--
     <div class="row">
         <div class="column side">
             <div id="drawing_container" class="container1">
@@ -158,16 +194,7 @@
 
 
         <div class="column middle">
-            <div class="container" id="screen_preview">
-                <img id="screenshot_preview" src="screenshot.png" width="256" height="224">
-                <canvas id="myCanvas" width="256" height="224" cssstyle="border:1px solid #000000">
-                </canvas>
-            </div>
-
-
-            <div id="tagging">
-                <img id=texture src="tagging.png" width="132" height="132">
-            </div>
+            
 
             <div id="instructions">
                 <h1>Instructions</h1>
@@ -180,9 +207,9 @@
             </div>
             <div id="buttons">
                 <input id="b_save" type="button" value="done">
-                <!--
+               
              <input id = "b_grid" type = "button" value = "grid ON">
-             -->
+             
 
                 <input id="b_reset" type="button" value="reset">
             </div>
@@ -190,7 +217,7 @@
             <p id="curr_textures"> 0/X Tiles </p>
         </div>
     </div>
-
+-->
 
     <!--
     <div id = "grid_buttons">
@@ -205,7 +232,9 @@
         <input id = "b_grid_right" type = "button" value = "&#8594;">
     </div>
 -->
-    <script src="/js/expert.js"></script>
+
+<script src="/js/expert.js"></script>
+
 </body>
 
 </html>
