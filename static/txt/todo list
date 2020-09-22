@@ -1,0 +1,21 @@
+/*
+
+░░░██╗░██╗░████████╗░█████╗░██████╗░░█████╗░    ██╗░░░░░██╗░██████╗████████╗
+██████████╗╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗    ██║░░░░░██║██╔════╝╚══██╔══╝
+╚═██╔═██╔═╝░░░██║░░░██║░░██║██║░░██║██║░░██║    ██║░░░░░██║╚█████╗░░░░██║░░░
+██████████╗░░░██║░░░██║░░██║██║░░██║██║░░██║    ██║░░░░░██║░╚═══██╗░░░██║░░░
+╚██╔═██╔══╝░░░██║░░░╚█████╔╝██████╔╝╚█████╔╝    ███████╗██║██████╔╝░░░██║░░░
+░╚═╝░╚═╝░░░░░░╚═╝░░░░╚════╝░╚═════╝░░╚════╝░    ╚══════╝╚═╝╚═════╝░░░░╚═╝░░░
+*/
+
+1. Fix bug when drawing using "square" button, square does not appear until the coords are finalized
+2. Fix bug when right-click drawing does not give the same color as background (probably transparency issue)
+3. Change pos and size of middle display (one for tiles); it is too big and should take less space
+4. Make 0/X tiles work (no code there yet)
+5. Write code for "comment" button
+6. Make "draw" and "square" be togglable (i.e. when one is active, other one should look inactive and vice verca)
+7. Make "done" button run previous code and transform the image to AI-readable format
+8. Link previous code to change different tiles
+9. Connect the page to vgac server (so the data can be taken from the server)
+10. Figure out the design for top left button (which changes the affordance of tile)
+11. Fix "reset" not clearing canvas

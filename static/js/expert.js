@@ -13,6 +13,7 @@
 ─────██████─────██████████████─████████████───██████████████─
 ─────────────────────────────────────────────────────────────
 */
+// located in /txt/todo list
 //second week of november - tagging event
 //prevent mouse or trap mouse css
 //TODO: 24/10/19: event called oncontext menu -> capture on canvas element; check riot
