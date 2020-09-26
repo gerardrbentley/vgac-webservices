@@ -46,28 +46,28 @@
 #texture
 {
     position: absolute;
-    left: 37.8%;
-    top: 27.2%;
-    height: 45.9%;
-    width: 24.4%;
+    left:34.300000%;
+    top:27.200000%;
+    height:19.100000%;
+    width:10.200000%;
 }
 
 #drawer
 {
     position: absolute;
-    left: 67.5%;
-    top: 27.2%;
-    height: 45.9%;
-    width: 27.9%;
+    left: 67.7%;
+    top: 27.3%;
+    height: 45.25%;
+    width: 27.7%;
 }
 
 #myCanvas_drawing
 {
     position: absolute;
-    left: 67.5%;
-    top: 27.2%;
-    height: 45.9%;
-    width: 27.9%;
+    left: 67.7%;
+    top: 27.3%;
+    height: 45.25%;
+    width: 27.7%;
 }
 
 #square_btn 
@@ -85,13 +85,13 @@
     color: white;
     display: inline-block;
     border: 4px solid #3e65b3;
-    border-radius: 0.38em;
+    border-radius: 0.1em;
     background-image: linear-gradient(#62a6ed, #4b78d6); 
     position: absolute;
-    top: 75.5%;
-    left: 4.65%;
-    height: 9.11%;
-    width: 20.8%;
+    top:27.300000%;
+    left:50.800000%;
+    height:45.700000%;
+    width:15.300000%;
 }
 
 #square_btn:hover 
@@ -99,36 +99,8 @@
     background-image: linear-gradient(rgb(26,175,238), rgb(4,132,217)); 
 }
 
-#button_instructions
-{
-    cursor: pointer;
-    margin: 0 auto;
-    text-align: center;
-    display:table-cell;
-    vertical-align: middle;
-    font-size: 2.5vw;
-    font-family: "Lucida Grande";
-    text-decoration: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    color: white;
-    display: inline-block;
-    border: 4px solid #3e65b3;
-    border-radius: 0.38em;
-    background-image: linear-gradient(#62a6ed, #4b78d6); 
-    position: absolute;
-    top: 86.7%;
-    left: 4.65%;
-    height: 9.11%;
-    width: 20.8%;
-}
 
-#button_instructions:hover
-{
-    background-image: linear-gradient(rgb(26,175,238), rgb(4,132,217)); 
-}
-
-#tiles_count
+/*#tiles_count
 {
     cursor: pointer;
     pointer-events: none;
@@ -147,16 +119,16 @@
     border-radius: 0.38em;
     background-image: linear-gradient(#62a6ed, #4b78d6); 
     position: absolute;
-    left: 27.2%;
-    top: 75.5%;
-    height: 9.11%;
-    width: 20.8%;
+    left:34.200000%;
+    top:50.500000%;
+    height:9.100000%;
+    width:15.300000%;
 }
 
 #tiles_count:hover
 {
     background-image: linear-gradient(rgb(26,175,238), rgb(4,132,217)); 
-}
+}*/
 
 #button_comment
 {
@@ -187,7 +159,7 @@
     background-image: linear-gradient(rgb(26,175,238), rgb(4,132,217)); 
 }
 
-#button_draw
+/*#button_draw
 {
     cursor: pointer;
     margin: 0 auto;
@@ -205,18 +177,170 @@
     border-radius: 0.38em;
     background-image: linear-gradient(#62a6ed, #4b78d6); 
     position: absolute;
-    left: 49.9%;
-    top: 75.5%;
-    height: 9.11%;
-    width: 20.8%;
+    top:64.100000%;
+    left:34.000000%;
+    height:9.100000%;
+    width:15.300000%;
 }
 
 #button_draw:hover
 {
     background-image: linear-gradient(rgb(26,175,238), rgb(4,132,217)); 
 }
+*/
+  .multi-button 
+  {
+    filter: drop-shadow(3px 10px 15px rgba(0, 0, 0, 0.45));
+    position: absolute;
+    top:64.100000%;
+    left:34.000000%;
+  }
+  .multi-button input
+  {
+    outline:none;
+    text-align: center;
+    display:table-cell;
+    vertical-align: middle;
+    height:9.1vh;
+    width:8.15vw;
+    font-size:2.5vh;
+    font-family: "Lucida Grande";
+    text-decoration: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    color: white;
+    display: inline-block;
+    border: 4px solid #3e65b3;
+    border-radius: 0.38em;
+    background-image: linear-gradient(#62a6ed, #4b78d6); 
+    margin: -5px; 
+  }
+  .multi-button :nth-child(1)
+  { 
+    border-radius: 20px 0 0 20px;
+  }
+  .multi-button :nth-child(2)
+  {
+    border-radius: 0 20px 20px 0;
+  }
+  input:hover
+  {
+    cursor: pointer;
+    filter: drop-shadow(3px 5px 5px rgba(0, 0, 0, 0.45));
+  }
+  input:active
+  {
+    filter: none;
+    transform: scale(.95);
+  }
+.btn.active, .btn:active 
+{
+    background-image: linear-gradient(rgb(16,135,218), rgb(4,122,207)); 
+}
 
-#button_square
+/*
+___________________
+*/
+  .multi-button2
+  {
+    filter: drop-shadow(3px 10px 15px rgba(0, 0, 0, 0.45));
+    position: absolute;
+    left:34.000000%;
+    top:50.500000%;
+  }
+  .multi-button2 input
+  {
+    outline:none;
+    text-align: center;
+    display:table-cell;
+    vertical-align: middle;
+    height:9.1vh;
+    width:8.15vw;
+    font-size:2.5vh;
+    font-family: "Lucida Grande";
+    text-decoration: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    color: white;
+    display: inline-block;
+    border: 4px solid #3e65b3;
+    border-radius: 0.38em;
+    background-image: linear-gradient(#62a6ed, #4b78d6); 
+    margin: -5px; 
+  }
+  .multi-button2 :nth-child(1)
+  { 
+    border-radius: 20px 0 0 20px;
+  }
+  .multi-button2 :nth-child(2)
+  {
+    border-radius: 0 20px 20px 0;
+  }
+  input:hover
+  {
+    cursor: pointer;
+    filter: drop-shadow(3px 5px 5px rgba(0, 0, 0, 0.45));
+  }
+  input:active
+  {
+    filter: none;
+    transform: scale(.95);
+    background-image: linear-gradient(rgb(16,135,218), rgb(4,122,207)); 
+  } 
+
+
+
+  .multi-button3 
+  {
+    filter: drop-shadow(3px 10px 15px rgba(0, 0, 0, 0.45));
+    position: absolute;
+    position: absolute;
+    top:27.300000%;
+    left:50.800000%;
+    
+  }
+  .multi-button3 input
+  {
+    outline:none;
+    text-align: center;
+    display:table-cell;
+    height:5.1vh;
+    width:15.30vw;
+    font-size:2.5vh;
+    font-family: "Lucida Grande";
+    text-decoration: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    color: white;
+    display: block;
+    border: 4px solid #3e65b3;
+    
+    background-image: linear-gradient(#62a6ed, #4b78d6); 
+    margin: -5px; 
+  }
+  .multi-button3 :nth-child(1)
+  { 
+    border-radius: 20px 20px 0 0px;
+  }
+  .multi-button3 :nth-child(10)
+  {
+    border-radius: 0 0 20px 20px;
+  }
+  input:hover
+  {
+    cursor: pointer;
+    filter: drop-shadow(3px 5px 5px rgba(0, 0, 0, 0.45));
+  }
+  input:active
+  {
+    filter: none;
+    transform: scale(.95);
+  }
+.btn1.active, .btn1:active 
+{
+    background-image: linear-gradient(rgb(16,135,218), rgb(4,122,207)); 
+} 
+/*#button_square
 {
     cursor: pointer;
     margin: 0 auto;
@@ -248,18 +372,41 @@
 {
     background-image: linear-gradient(rgb(26,175,238), rgb(4,132,217)); 
 }
-
-
+*/
+#tiles
+{
+  cursor: pointer;
+  margin: 0 auto;
+  text-align: center;
+  display:table-cell;
+  vertical-align: middle;
+  font-size: 1vw;
+  font-family: "Lucida Grande";
+  text-decoration: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  color: white;
+  display: inline-block;
+  border: 4px solid #3e65b3;
+  border-radius: 0.1em;
+  background-image: linear-gradient(#62a6ed, #4b78d6); 
+  position: absolute;
+  top:27.300000%;
+  left:44.9%;
+  height:4.6%;
+  width:5.300000%;
+}
 
 
 #button_done
 {
+    outline:none;
     cursor: pointer;
     margin: 0 auto;
     text-align: center;
     display:table-cell;
     vertical-align: middle;
-    font-size: 3vw;
+    font-size:4.5vh;
     font-family: "Lucida Grande";
     text-decoration: none;
     text-rendering: optimizeLegibility;
@@ -283,12 +430,13 @@
 
 #button_reset
 {
+    outline:none;
     cursor: pointer;
     margin: 0 auto;
     text-align: center;
     display:table-cell;
     vertical-align: middle;
-    font-size: 3vw;
+    font-size:4.5vh;
     font-family: "Lucida Grande";
     text-decoration: none;
     text-rendering: optimizeLegibility;
@@ -588,7 +736,7 @@
 
 
 .instr .closebtn_i 
-{
+{ 
   position: absolute;
   top: 0;
   right: 25px;
@@ -638,4 +786,38 @@
     right: 25px;
     font-size: 36px;
     margin-left: 50px;
+  }
+
+  textarea {
+    outline:none;
+    resize:none;
+    cursor: pointer;
+    margin: 0 auto;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 2.5vh;
+    font-family: "Lucida Grande";
+    text-decoration: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    color: white;
+    display: inline-block;
+    border: 4px solid rgba(138,138,138, 0.9);
+    border-radius: 0.7em;
+    background: rgb(208,208,208);
+    background: linear-gradient(90deg, rgba(208,208,208,0.7) 0%, rgba(134,134,134,0.8) 100%);
+    position: absolute;
+    left:50.800000%;
+    top: 75.5%;
+    height:7.8%;
+    width:20%;
+  }
+  
+  textarea :hover{
+    background-image: linear-gradient(rgb(26,175,238), rgb(4,132,217)); 
+  }
+
+  .placeholder
+  {
+    vertical-align: middle;
   }

@@ -397,8 +397,8 @@ bC.onclick = enlarge_aff;
 var bF = document.getElementById("bF");
 bF.onclick = enlarge_aff;
 */
-var button_instructions = document.getElementById("button_instructions");
-button_instructions.onclick = function()
+
+function instructions()
 {
     document.getElementById("myInstructions").style.width = "100%";
 }
@@ -409,6 +409,8 @@ button_reset.onclick = function()
     simulate(button_reset, 27, "ESC");
 };
 
+
+
 var button_done = document.getElementById("button_done");
 button_done.onclick = function()
 {
@@ -416,17 +418,43 @@ button_done.onclick = function()
     alert("Saved!");
 };
 
+const multi_button  = document.querySelector('.multi-button');
+const btns = document.querySelectorAll('.btn'); 
+
+multi_button.addEventListener('click', e => {
+
+ btns.forEach(btn => {
+
+    if(btn.getAttribute('id') === e.target.getAttribute('id'))
+      btn.classList.add('active');
+    else
+      btn.classList.remove('active');
+    });
+});
+
+
+const multi_button3  = document.querySelector('.multi-button3');
+const btns1 = document.querySelectorAll('.btn1'); 
+
+multi_button3.addEventListener('click', e => {
+
+ btns1.forEach(btn1 => {
+
+    if(btn1.getAttribute('id') === e.target.getAttribute('id'))
+      btn1.classList.add('active');
+      console.log("test");
+    });
+});
 var button_square = document.getElementById("button_square");
 button_square.onclick = function()
 {
-    if(!isrect)
-    {
-        isrect++;
-    }
-    else
-    {
-        isrect--;
-    }
+    isrect = 1;
+};
+
+var button_draw = document.getElementById("button_draw");
+button_draw.onclick = function()
+{
+    isrect = 0;
 };
 
 function comment() 
@@ -881,8 +909,12 @@ for (var canvas_id = 0; canvas_id < canvas_list.length; canvas_id++)
         }
         if(event.button == 2)
         {
-            ++mouseDown;
-            color = "black";
+            if (!isrect)
+            {
+                ++mouseDown;
+                color = "black";
+            }
+            
         }
     }
     canvas_for_drawing.onmouseup = function()
@@ -896,10 +928,7 @@ for (var canvas_id = 0; canvas_id < canvas_list.length; canvas_id++)
             {
                 color = "rgba(255, 255, 255, 0)";
             }
-            else
-            {
-                color = "white";
-            } 
+            
         }
         if(event.button == 2)
         {
@@ -1362,14 +1391,17 @@ document.onkeydown = function(event)
         break;
 
         case 27: // ECS
-            if(!is_big)
-            {
+            //if(!is_big)
+            //{
+                draw_b(0, 0, myCanvas_drawing);
+                /*
                 poses = mydata["output"]['textures']['texture_' + num]['locations'];
                 for(i = 0; i < Object.keys(poses).length; i++)
                 {
                     pos_x = poses['location_' + i]['x'];
                     pos_y = poses['location_' + i]['y'];
-                    draw_b(pos_x, pos_y, canvas_solid, GRID_SIZE, GRID_SIZE);
+                    
+                    /*
                     draw_b(pos_x, pos_y, canvas_dangerous, GRID_SIZE, GRID_SIZE);
                     draw_b(pos_x, pos_y, canvas_movable, GRID_SIZE, GRID_SIZE);
                     draw_b(pos_x, pos_y, canvas_destroyable, GRID_SIZE, GRID_SIZE);
@@ -1379,6 +1411,7 @@ document.onkeydown = function(event)
                     draw_b(pos_x, pos_y, canvas_usable, GRID_SIZE, GRID_SIZE);
                     draw_b(pos_x, pos_y, canvas_changeable, GRID_SIZE, GRID_SIZE);
                     draw_b(pos_x, pos_y, canvas_permeable, GRID_SIZE, GRID_SIZE);
+                    
                     out_textures['texture_'+num]['solid'] = 0;
                     out_textures['texture_'+num]['movable'] = 0;
                     out_textures['texture_'+num]['destroyable'] = 0;
@@ -1389,6 +1422,7 @@ document.onkeydown = function(event)
                     out_textures['texture_'+num]['changeable'] = 0;
                     out_textures['texture_'+num]['ui'] = 0;
                     out_textures['texture_'+num]['permeable'] = 0;
+                    
                     checkQ.checked = false;
                     checkW.checked = false;
                     checkE.checked = false;
@@ -1399,6 +1433,7 @@ document.onkeydown = function(event)
                     checkX.checked = false;
                     checkC.checked = false;
                     checkF.checked = false;
+                    
                 }
                 //save and load current state of affordances here
                 //var solid_img = document.getElementById('solid');
@@ -1416,11 +1451,12 @@ document.onkeydown = function(event)
                         draw_picture(output["tag_images"][Object.keys(output["tag_images"])[canvas_id]], canvas_list[canvas_id], 256, 224);
                     }
                 }
-            }
-            else
-            {
-                alert("Close the big image first!");
-            }
+            */
+            //}
+            //else
+            //{
+            //    alert("Close the big image first!");
+            //}
         break;
 
         /*case GRID_SIZE: do this if want shift
