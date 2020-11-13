@@ -36,12 +36,19 @@
 #myCanvas
 {
     position: absolute;
+    opacity:0.7;
     left: 4.65%;
     top: 27.2%;
     height: 45.9%;
     width: 27.9%;
 }
 
+.element {
+  background-color:#ffffff;
+  border: 10px solid #FF0000;
+  position: absolute;
+  z-index: 100;
+}
 
 #texture
 {
@@ -63,6 +70,17 @@
 
 #myCanvas_drawing
 {
+    opacity:0.7;
+    position: absolute;
+    left: 67.7%;
+    top: 27.3%;
+    height: 45.25%;
+    width: 27.7%;
+}
+
+#myCanvas_drawing_square
+{
+    opacity:0.7;
     position: absolute;
     left: 67.7%;
     top: 27.3%;
@@ -100,99 +118,11 @@
 }
 
 
-/*#tiles_count
-{
-    cursor: pointer;
-    pointer-events: none;
-    margin: 0 auto;
-    text-align: center;
-    display:table-cell;
-    vertical-align: middle;
-    font-size: 3vw;
-    font-family: "Lucida Grande";
-    text-decoration: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    color: white;
-    display: inline-block;
-    border: 4px solid #3e65b3;
-    border-radius: 0.38em;
-    background-image: linear-gradient(#62a6ed, #4b78d6); 
-    position: absolute;
-    left:34.200000%;
-    top:50.500000%;
-    height:9.100000%;
-    width:15.300000%;
-}
-
-#tiles_count:hover
-{
-    background-image: linear-gradient(rgb(26,175,238), rgb(4,132,217)); 
-}*/
-
-#button_comment
-{
-    cursor: pointer;
-    margin: 0 auto;
-    text-align: center;
-    display:table-cell;
-    vertical-align: middle;
-    font-size: 2.5vw;
-    font-family: "Lucida Grande";
-    text-decoration: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    color: white;
-    display: inline-block;
-    border: 4px solid #3e65b3;
-    border-radius: 0.38em;
-    background-image: linear-gradient(#62a6ed, #4b78d6); 
-    position: absolute;
-    top: 86.7%;
-    left: 27.2%;
-    height: 9.11%;
-    width: 20.8%;
-}
-
-#button_comment:hover
-{
-    background-image: linear-gradient(rgb(26,175,238), rgb(4,132,217)); 
-}
-
-/*#button_draw
-{
-    cursor: pointer;
-    margin: 0 auto;
-    text-align: center;
-    display:table-cell;
-    vertical-align: middle;
-    font-size: 3vw;
-    font-family: "Lucida Grande";
-    text-decoration: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    color: white;
-    display: inline-block;
-    border: 4px solid #3e65b3;
-    border-radius: 0.38em;
-    background-image: linear-gradient(#62a6ed, #4b78d6); 
-    position: absolute;
-    top:64.100000%;
-    left:34.000000%;
-    height:9.100000%;
-    width:15.300000%;
-}
-
-#button_draw:hover
-{
-    background-image: linear-gradient(rgb(26,175,238), rgb(4,132,217)); 
-}
-*/
   .multi-button 
   {
     filter: drop-shadow(3px 10px 15px rgba(0, 0, 0, 0.45));
     position: absolute;
-    top:64.100000%;
+    top:64.800000%;
     left:34.000000%;
   }
   .multi-button input
@@ -295,16 +225,16 @@ ___________________
     filter: drop-shadow(3px 10px 15px rgba(0, 0, 0, 0.45));
     position: absolute;
     position: absolute;
-    top:27.300000%;
+    top:27.4700000%;
     left:50.800000%;
     
   }
-  .multi-button3 input
+  .multi-button3 .btn1
   {
     outline:none;
     text-align: center;
     display:table-cell;
-    height:5.1vh;
+    height:4.23vh;
     width:15.30vw;
     font-size:2.5vh;
     font-family: "Lucida Grande";
@@ -320,26 +250,42 @@ ___________________
   }
   .multi-button3 :nth-child(1)
   { 
-    border-radius: 20px 20px 0 0px;
+    border-radius: 5px 5px 0 0px;
   }
   .multi-button3 :nth-child(10)
   {
-    border-radius: 0 0 20px 20px;
+    border-radius: 0 0 5px 5px;
   }
-  input:hover
+  .multi-button3 label input {
+    position:absolute;
+    top:-1000px;
+  }
+ .multi-button3 label input:checked + span{
+    background-image: linear-gradient(rgb(16,135,218), rgb(4,122,207)); 
+}
+
+.multi-button3 label span {
+  text-align:center;
+  padding:6px 0px;
+  display:block;
+}
+.btn1{
+  user-select: none;
+}
+  .btn1:hover
   {
     cursor: pointer;
     filter: drop-shadow(3px 5px 5px rgba(0, 0, 0, 0.45));
   }
-  input:active
+  .btn1:active
   {
     filter: none;
     transform: scale(.95);
   }
-.btn1.active, .btn1:active 
-{
+  .btn1.active
+  {
     background-image: linear-gradient(rgb(16,135,218), rgb(4,122,207)); 
-} 
+  } 
 /*#button_square
 {
     cursor: pointer;
@@ -373,9 +319,9 @@ ___________________
     background-image: linear-gradient(rgb(26,175,238), rgb(4,132,217)); 
 }
 */
-#tiles
+#textures
 {
-  cursor: pointer;
+  cursor: default;
   margin: 0 auto;
   text-align: center;
   display:table-cell;
@@ -391,8 +337,8 @@ ___________________
   border-radius: 0.1em;
   background-image: linear-gradient(#62a6ed, #4b78d6); 
   position: absolute;
-  top:27.300000%;
-  left:44.9%;
+  top:27.000000%;
+  left:44.62%;
   height:4.6%;
   width:5.300000%;
 }
@@ -572,22 +518,7 @@ ___________________
 }
 #b_save:hover {opacity: 1}
 
-#b_reset
-{
-    border: none;
-    color: white;
-    padding: 22px;
-    width:128px;
-    text-align: center;
-    font-size: 16px;
-    margin: 4px 0px;
-    opacity: 0.7;
-    transition: 0.3s;
-    display: inline-block;
-    text-decoration: none;
-    cursor: pointer;
-}
-#b_reset:hover {opacity: 1}
+
 
 #b_grid
 {
@@ -719,6 +650,7 @@ ___________________
      font-size: 18px;
 }
 
+
 .instr 
 {
   height: 100%; /* 100% Full-height */
@@ -744,7 +676,7 @@ ___________________
   margin-left: 50px;
 }
 
-.instr .h2
+.instr .h3
 {
   font-size: 99;
 }
@@ -757,7 +689,8 @@ ___________________
     top: 0; /* Stay at the top */
     left: 0;
     background-color: #111; /* Black*/
-    overflow-x: hidden; /* Disable horizontal scroll */
+    overflow-x: hidden;
+    overflow-y:hidden; /* Disable horizontal scroll */
     padding-top: 60px; /* Place content 60px from the top */
     transition: 0.5s; /* 0.5 second transition effect to slide in the sidenav */
   }
@@ -788,21 +721,21 @@ ___________________
     margin-left: 50px;
   }
 
-  textarea {
+ .comment_class {
     outline:none;
     resize:none;
-    cursor: pointer;
-    margin: 0 auto;
-    text-align: center;
-    vertical-align: middle;
+    cursor: text;
+    text-align:center;
+    display: table-cell;
     font-size: 2.5vh;
     font-family: "Lucida Grande";
     text-decoration: none;
     text-rendering: optimizeLegibility;
+    line-height: 2.5em;
     -webkit-font-smoothing: antialiased;
-    color: white;
+    color: black;
     display: inline-block;
-    border: 4px solid rgba(138,138,138, 0.9);
+    border: 4px solid rgba(78,78,78, 0.9);
     border-radius: 0.7em;
     background: rgb(208,208,208);
     background: linear-gradient(90deg, rgba(208,208,208,0.7) 0%, rgba(134,134,134,0.8) 100%);
@@ -811,13 +744,145 @@ ___________________
     top: 75.5%;
     height:7.8%;
     width:20%;
+    
   }
-  
-  textarea :hover{
-    background-image: linear-gradient(rgb(26,175,238), rgb(4,132,217)); 
+  .comment_class::-webkit-input-placeholder       {opacity: 1; transition: opacity 0.3s ease;}
+  .comment_class::-moz-placeholder                {opacity: 1; transition: opacity 0.3s ease;}
+  .comment_class:-moz-placeholder                 {opacity: 1; transition: opacity 0.3s ease;}
+  .comment_class:-ms-input-placeholder            {opacity: 1; transition: opacity 0.3s ease;}
+  .comment_class:focus::-webkit-input-placeholder {opacity: 0; transition: opacity 0.3s ease;}
+  .comment_class:focus::-moz-placeholder          {opacity: 0; transition: opacity 0.3s ease;}
+  .comment_class:focus:-moz-placeholder           {opacity: 0; transition: opacity 0.3s ease;}
+  .comment_class:focus:-ms-input-placeholder      {opacity: 0; transition: opacity 0.3s ease;}
+.comment_class:hover,
+.comment_class:focus{
+  background: rgb(232,232,232);
+  background: linear-gradient(90deg, rgba(232,232,232,0.8) 0%, rgba(175,175,175,0.8) 100%);
   }
 
   .placeholder
   {
     vertical-align: middle;
   }
+
+
+
+  .tmpcanv{
+    visibility: hidden;
+    opacity:0.7;
+    position: absolute;
+    left: 67.7%;
+    top: 27.3%;
+    height: 45.25%;
+    width: 27.7%;
+}
+
+#modalContainer {
+	background-color:rgba(0, 0, 0, 0.3);
+	position:absolute;
+	width:100%;
+	height:100%;
+	top:0px;
+	left:0px;
+	z-index:10000;
+	background-image:url(tp.png); /* required by MSIE to prevent actions on lower z-index elements */
+}
+
+#alertBox {
+	position:relative;
+	width:300px;
+	min-height:100px;
+	margin-top:50px;
+	border:1px solid #666;
+	background-color:#fff;
+	background-repeat:no-repeat;
+	background-position:20px 30px;
+}
+
+#modalContainer > #alertBox {
+	position:fixed;
+}
+
+#alertBox h1 {
+	margin:0;
+	font:bold 0.9em verdana,arial;
+	background-color:#3073BB;
+	color:#FFF;
+	border-bottom:1px solid #000;
+	padding:2px 0 2px 5px;
+}
+
+#alertBox p {
+	font:0.7em verdana,arial;
+	height:50px;
+	padding-left:5px;
+	margin-left:55px;
+}
+
+#alertBox #clseButn {
+	display:block;
+	position:relative;
+	margin:5px auto;
+	padding:7px;
+	border:0 none;
+	width:70px;
+	font:0.7em verdana,arial;
+	text-transform:uppercase;
+	text-align:center;
+	color:#FFF;
+	background-color:#357EBD;
+	border-radius: 3px;
+	text-decoration:none;
+}
+
+/* unrelated styles */
+
+#mContainer {
+	position:relative;
+	width:600px;
+	margin:auto;
+	padding:5px;
+	border-top:2px solid #000;
+	border-bottom:2px solid #000;
+	font:0.7em verdana,arial;
+}
+
+h1,h2 {
+	margin:0;
+	padding:4px;
+	font:bold 1.5em verdana;
+	border-bottom:1px solid #000;
+}
+
+code {
+	font-size:1.2em;
+	color:#069;
+}
+
+#credits {
+	position:relative;
+	margin:25px auto 0px auto;
+	width:350px; 
+	font:0.7em verdana;
+	border-top:1px solid #000;
+	border-bottom:1px solid #000;
+	height:90px;
+	padding-top:4px;
+}
+
+#credits img {
+	float:left;
+	margin:5px 10px 5px 0px;
+	border:1px solid #000000;
+	width:80px;
+	height:79px;
+}
+
+.important {
+	background-color:#F5FCC8;
+	padding:2px;
+}
+
+code span {
+	color:green;
+}

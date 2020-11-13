@@ -25,37 +25,112 @@
 
         <img id="drawer" src = "/images/screen_example.png">
 
-        <canvas id = "myCanvas_drawing" affordance_id = "-1" cssstyle="border:1px solid #000000">
+        <canvas id = "myCanvas_drawing" affordance_id = "-1" cssstyle="border:1px solid #000000; z-index: 9;">
         </canvas>
+        <canvas id = "myCanvas_drawing1" class = "tmpcanv" affordance_id = "-1" cssstyle="border:1px solid #000000; z-index: 0;">
+        </canvas>
+        <canvas id = "myCanvas_drawing2" class = "tmpcanv" affordance_id = "-1" cssstyle="border:1px solid #000000; z-index: 0;">
+        </canvas>
+        <canvas id = "myCanvas_drawing3" class = "tmpcanv" affordance_id = "-1" cssstyle="border:1px solid #000000; z-index: 0;">
+        </canvas>
+        <canvas id = "myCanvas_drawing4" class = "tmpcanv" affordance_id = "-1" cssstyle="border:1px solid #000000; z-index: 0;">
+        </canvas>
+        <canvas id = "myCanvas_drawing5" class = "tmpcanv" affordance_id = "-1" cssstyle="border:1px solid #000000; z-index: 0;">
+        </canvas>
+        <canvas id = "myCanvas_drawing6" class = "tmpcanv" affordance_id = "-1" cssstyle="border:1px solid #000000; z-index: 0;">
+        </canvas>
+        <canvas id = "myCanvas_drawing7" class = "tmpcanv" affordance_id = "-1" cssstyle="border:1px solid #000000; z-index: 0;">
+        </canvas>
+        <canvas id = "myCanvas_drawing8" class = "tmpcanv" affordance_id = "-1" cssstyle="border:1px solid #000000; z-index: 0;">
+        </canvas>
+        <canvas id = "myCanvas_drawing9" class = "tmpcanv" affordance_id = "-1" cssstyle="border:1px solid #000000; z-index: 0;">
+        </canvas>
+        <canvas id = "myCanvas_drawing10" class = "tmpcanv" affordance_id = "-1" cssstyle="border:1px solid #000000; z-index: 0;">
+        </canvas>
+
+        <canvas id = "myCanvas_drawing_square" affordance_id = "-1" cssstyle="border:1px solid #000000; z-index: 10;">
+        </canvas>
+
         <div class="multi-button">
-            <input id = "button_draw" class = "btn" type = "button" value = "Draw">
-            <input id = "button_square" class = "btn" type = "button" value = "Square">
+            <input id = "button_draw" class = "btn" type = "button" value = "Draw" disabled>
+            <input id = "button_square" class = "btn" type = "button" value = "Square" disabled>
         </div>
         <div class="multi-button2">
-                <input id = "button_back" type = "button" value = "Back">
-                <input id = "button_next" type = "button" value = "Next">
+                <input id = "button_back" type = "button" value = "Back" disabled>
+                <input id = "button_next" type = "button" value = "Next" disabled>
         </div>
+
         <div class="multi-button3">
-            <input id = "button_1"class = "btn1" type = "button" value = "Dangerous">
-            <input id = "button_2"class = "btn1" type = "button" value = "Solid">
-            <input id = "button_3"class = "btn1" type = "button" value = "Permeable">
-            <input id = "button_4"class = "btn1" type = "button" value = "Changeable">
-            <input id = "button_5"class = "btn1" type = "button" value = "Movable">
-            <input id = "button_6"class = "btn1" type = "button" value = "Destroyable">
-            <input id = "button_7"class = "btn1" type = "button" value = "Gettable">
-            <input id = "button_8"class = "btn1" type = "button" value = "Usable">
-            <input id = "button_9"class = "btn1" type = "button" value = "Portal">
-            <input id = "button_10"class = "btn1" type = "button" value = "UI">
-        </div>
-        <textarea placeholder="Comment"></textarea>
+            
+            <div id = "b1" class = btn1>
+                <label>
+                    <input id = "button_1" aff = "dangerous" input type = "checkbox" checked> <span>Dangerous</span>
+                </label>
+            </div>
+
+            <div id = "b2" class = btn1>
+                <label>
+                    <input id = "button_2" aff = "solid" input type = "checkbox" checked> <span>Solid</span>
+                </label>
+            </div>
+
+            <div id = "b3" class = btn1>
+                <label>
+                    <input id = "button_3" aff = "permeable"  input type = "checkbox" checked> <span>Permeable</span>
+                </label>
+            </div>
+
+            <div id = "b4" class = btn1>
+                <label>
+                    <input id = "button_4" aff = "changeable" input type = "checkbox" checked> <span>Changeable</span>
+                </label>
+            </div>
+
+            <div id = "b5" class = btn1>
+                <label>
+                    <input id = "button_5" aff = "movable" input type = "checkbox" checked> <span>Movable</span>
+                </label>
+            </div>
+
+            <div id = "b6" class = btn1>
+                <label>
+                    <input id = "button_6" aff = "destroyable" input type = "checkbox" checked> <span>Destroyable</span>
+                </label>
+            </div>
+
+            <div id = "b7" class = btn1>
+                <label>
+                    <input id = "button_7" aff = "gettable" input type = "checkbox" checked> <span>Gettable</span>
+                </label>
+            </div>        
+            <div id = "b8" class = btn1>
+                <label>
+                    <input id = "button_8" aff = "usable" input type = "checkbox" checked> <span>Usable</span>
+                </label>
+            </div>
+
+            <div id = "b9" class = btn1>
+                <label>
+                    <input id = "button_9" aff = "portal" input type = "checkbox" checked> <span>Portal</span>
+                </label>
+            </div>
+
+            <div id = "b10" class = btn1>
+                <label>
+                    <input id = "button_10" aff = "ui" input type = "checkbox" checked> <span>UI</span>
+                </label>
+            </div>
+
+            </div>
+        <textarea placeholder = "Comment" id = "my_comment" type = "text" class = "comment_class"></textarea>
         
         <input id = "button_reset" type = "button" value = "Reset">
-        <input id = "button_done" type = "button" value = "Done">
-        <input id = "tiles" type = "button" value = "0/X">
+        <input id = "button_done" type = "button" value = "Done" disabled>
+        <p id = "textures">0/X</p>
         
         <div id="myInstructions" class="instr">
             <a href="javascript:void(0)" class="closebtn_i" onclick="closeInstr()">&times;</a>
-            <h2 align="center" style="color: white; position:relative; top:-40px; font-size:50px;">Instructions</h2>
+            <h3 align="center" style="color: white; position:relative; top:-40px; font-size:50px;">Instructions</h3>
             <p align="left" style="color: white; position:relative; left:200px; font-size:20px">1. Click on all categories that apply to the tile in the middle of the page.</p>
             <p align="left" style="color: white; position:relative; left:200px; font-size:20px">2. Click "context" if you want to see this tile in a bigger image.</p>
             <p align="left" style="color: white; position:relative; left:200px; font-size:20px">3. Click on "reset" if you made a mistake selecting. It will reset all your selections.</p>
@@ -105,152 +180,7 @@
         </div>
     </div>
     -->
-<!--
-    <div class="row">
-        <div class="column side">
-            <div id="drawing_container" class="container1">
-                <img id="drawer" src="screenshot.png" width="768" height="672">
-                <canvas id="myCanvas_drawing" width="768" height="672" affordance_id="-1"
-                    cssstyle="border:1px solid #000000">
-                </canvas>
-                <p id="name_big"> hereismytext </p>
-                <div class="button_close">
-                    <input id="bClose" type="button" value="close">
-                </div>
-            </div>
 
-            <div class="grid">
-
-                <div id="solid_container" class="container">
-                    <div class="name_af">Solid</div>
-                    <img id="solid" src="screenshot.png" width="256" height="224">
-                    <canvas id="myCanvas_solid" width="256" height="224" cssstyle="border:1px solid #000000">
-                    </canvas>
-                    <input type="checkbox" id="cbQ" />
-                    <input id="bQ" type="button" value="enlarge" affordance_id="0" name="solid">
-                </div>
-                <div id="movable_container" class="container">
-                    <div class="name_af">Movable</div>
-                    <img id="movable" src="screenshot.png" width="256" height="224">
-                    <canvas id="myCanvas_movable" width="256" height="224" cssstyle="border:1px solid #000000">
-                    </canvas>
-                    <input type="checkbox" id="cbW" />
-                    <input id="bW" type="button" value="enlarge" affordance_id="1" name="movable">
-                </div>
-                <div id="destroyable_container" class="container">
-                    <div class="name_af">Destroyable</div>
-                    <img id="destroyable" src="screenshot.png" width="256" height="224">
-                    <canvas id="myCanvas_destroyable" width="256" height="224" cssstyle="border:1px solid #000000">
-                    </canvas>
-                    <input type="checkbox" id="cbE" />
-                    <input id="bE" type="button" value="enlarge" affordance_id="2" name="destroyable">
-                </div>
-
-                <div id="dangerous_container" class="container">
-                    <div class="name_af">Dangerous</div>
-                    <img id="dangerous" src="screenshot.png" width="256" height="224">
-                    <canvas id="myCanvas_dangerous" width="256" height="224" cssstyle="border:1px solid #000000">
-                    </canvas>
-                    <input type="checkbox" id="cbA" />
-                    <input id="bA" type="button" value="enlarge" affordance_id="3" name="dangerous">
-                </div>
-                <div id="gettable_container" class="container">
-                    <div class="name_af">Gettable</div>
-                    <img id="gettable" src="screenshot.png" width="256" height="224">
-                    <canvas id="myCanvas_gettable" width="256" height="224" cssstyle="border:1px solid #000000">
-                    </canvas>
-                    <input type="checkbox" id="cbS" />
-                    <input id="bS" type="button" value="enlarge" affordance_id="4" name="gettable">
-                </div>
-
-                <div id="portal_container" class="container">
-                    <div class="name_af">Portal</div>
-                    <img id="portal" src="screenshot.png" width="256" height="224">
-                    <canvas id="myCanvas_portal" width="256" height="224" cssstyle="border:1px solid #000000">
-                    </canvas>
-                    <input type="checkbox" id="cbD" />
-                    <input id="bD" type="button" value="enlarge" affordance_id="5" name="portal">
-                </div>
-                <div id="usable_container" class="container">
-                    <div class="name_af">Usable</div>
-                    <img id="usable" src="screenshot.png" width="256" height="224">
-                    <canvas id="myCanvas_usable" width="256" height="224" cssstyle="border:1px solid #000000">
-                    </canvas>
-                    <input type="checkbox" id="cbZ" />
-                    <input id="bZ" type="button" value="enlarge" affordance_id="6" name="usable">
-                </div>
-
-                <div id="changeable_container" class="container">
-                    <div class="name_af">Changeable</div>
-                    <img id="changeable" src="screenshot.png" width="256" height="224">
-                    <canvas id="myCanvas_changeable" width="256" height="224" cssstyle="border:1px solid #000000">
-                    </canvas>
-                    <input type="checkbox" id="cbX" />
-                    <input id="bX" type="button" value="enlarge" affordance_id="7" name="changeable">
-
-                </div>
-                <div id="ui_container" class="container">
-                    <div class="name_af">UI</div>
-                    <img id="ui" src="screenshot.png" width="256" height="224">
-                    <canvas id="myCanvas_ui" width="256" height="224" cssstyle="border:1px solid #000000">
-                    </canvas>
-                    <input type="checkbox" id="cbC" />
-                    <input id="bC" type="button" value="enlarge" affordance_id="8" name="ui">
-
-                </div>
-                <div id="permeable_container" class="container">
-                    <div class="name_af">PERMEABLE</div>
-                    <img id="permeable" src="screenshot.png" width="256" height="224">
-                    <canvas id="myCanvas_permeable" width="256" height="224" cssstyle="border:1px solid #000000">
-                    </canvas>
-                    <input type="checkbox" id="cbF" />
-                    <input id="bF" type="button" value="enlarge" affordance_id="9" name="permeable">
-
-                </div>
-
-            </div>
-        </div>
-
-
-        <div class="column middle">
-            
-
-            <div id="instructions">
-                <h1>Instructions</h1>
-            </div>
-            <div id="instructions_e">
-                <p> 1. Adjust the grid</p>
-                <p> 2. Hit "save grid"</p>
-                <p> 3. Hit enter for next tile</p>
-                <p> Hit enter for next tile</p>
-            </div>
-            <div id="buttons">
-                <input id="b_save" type="button" value="done">
-               
-             <input id = "b_grid" type = "button" value = "grid ON">
-             
-
-                <input id="b_reset" type="button" value="reset">
-            </div>
-
-            <p id="curr_textures"> 0/X Tiles </p>
-        </div>
-    </div>
--->
-
-    <!--
-    <div id = "grid_buttons">
-        <input id = "b_grid_save" type = "button" value = "save grid">
-        <input id = "b_grid_up" type = "button" value = "&#8593;">
-        <input id = "b_grid_reset" type = "button" value = "reset grid">
-
-    </div>
-    <div id = "grid_controls">
-        <input id = "b_grid_left" type = "button" value = "&#8592;">
-        <input id = "b_grid_down" type = "button" value = "&#8595;">
-        <input id = "b_grid_right" type = "button" value = "&#8594;">
-    </div>
--->
 
 <script src="/js/expert.js"></script>
 
